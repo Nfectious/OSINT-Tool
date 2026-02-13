@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  osint-api:
+    build: ./backend
+    container_name: valkyrie-osint-api
+    restart: unless-stopped
+    ports:
+      - "8400:8400"
+    volumes:
+      - ./data:/app/data
+      - /var/run/docker.sock:/var/run/docker.sock
+    env_file:
+      - .env
+    networks:
+      - osint-net
+    depends_on:
+      - osint-db
+
+  osint-db:
+    image: postgres:15-alpine
+    container_name: valkyrie-osint-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-osint}
+      POSTGRES_USER: ${POSTGRES_USER:-valkyrie}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+    volumes:
+      - osint-pgdata:/var/lib/postgresql/data
+    networks:
+      - osint-net
+
+  phoneinfoga:
+    image: sundowndev/phoneinfoga:latest
+    container_name: valkyrie-phoneinfoga
+    restart: unless-stopped
+    command: serve -p 8080
+    ports:
+      - "8401:8080"
+    networks:
+      - osint-net
+
+networks:
+  osint-net:
+    driver: bridge
+
+volumes:
+  osint-pgdata:

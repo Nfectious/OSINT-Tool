@@ -1,0 +1,15 @@
+fastapi==0.111.0
+uvicorn[standard]==0.30.1
+sqlalchemy==2.0.30
+alembic==1.13.1
+psycopg2-binary==2.9.9
+python-dotenv==1.0.1
+pydantic==2.7.1
+pydantic-settings==2.3.0
+httpx==0.27.0
+python-whois==0.9.4
+requests==2.32.3
+phonenumbers==8.13.39
+dnspython==2.6.1
+pyexiftool==0.5.6
+aiohttp==3.9.5
