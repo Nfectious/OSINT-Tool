@@ -1,0 +1,1514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VALKYRIE OSINT</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#111;--bg2:#0f0f18;--bg3:#141420;--panel:#12121e;
+  --red:#f00;--red-dim:#991b1b;--red-glow:#ff2020;
+  --amber:#f59e0b;--amber-dim:#92400e;
+  --green:#0f0;--green-dim:#15803d;
+  --cyan:#06b6d4;--cyan-dim:#0e7490;
+  --text:#fff;--text-dim:#94a3b8;--text-muted:#475569;
+  --border:#1e293b;--border-light:#334155;
+  --mono:'Share Tech Mono',monospace;
+  --radius:4px;
+}
+html{font-size:16px}
+body{
+  background:var(--bg);color:var(--text);font-family:var(--mono);
+  min-height:100vh;overflow-x:hidden;
+  background-image:
+    linear-gradient(rgba(0,255,0,.02) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,255,0,.02) 1px,transparent 1px);
+  background-size:40px 40px;
+}
+/* Scanline overlay */
+body::after{
+  content:'';position:fixed;top:0;left:0;width:100%;height:100%;
+  pointer-events:none;z-index:9999;
+  background:repeating-linear-gradient(
+    0deg,transparent,transparent 2px,rgba(0,0,0,.06) 2px,rgba(0,0,0,.06) 4px
+  );
+}
+/* Header */
+.header{
+  border-bottom:1px solid var(--border);
+  padding:1.5rem 2rem;position:relative;overflow:hidden;
+  background:linear-gradient(180deg,#0a0a0a 0%,var(--bg) 100%);
+}
+.header::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--green),var(--amber),var(--green),transparent);
+}
+.header-inner{max-width:1400px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem}
+.brand h1{
+  font-size:1.75rem;letter-spacing:.3em;color:var(--green);
+  text-shadow:0 0 30px rgba(0,255,0,.4),0 0 60px rgba(0,255,0,.15);
+}
+.brand .sub{font-size:.85rem;letter-spacing:.25em;color:var(--text-dim);margin-top:.2rem}
+.header-status{display:flex;gap:1.5rem;align-items:center}
+.status-dot{width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block;
+  box-shadow:0 0 8px var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.clock{color:var(--amber);font-size:.9rem}
+
+/* Layout */
+.container{max-width:1400px;margin:0 auto;padding:1.5rem 2rem;padding-bottom:220px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem}
+.full-width{grid-column:1/-1}
+
+/* Panels */
+.panel{
+  background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);
+  overflow:hidden;
+}
+.panel-head{
+  padding:.75rem 1rem;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:.6rem;
+  background:rgba(255,255,255,.02);
+}
+.panel-head .dot{width:6px;height:6px;border-radius:50%}
+.panel-head .label{font-size:.75rem;letter-spacing:.15em;text-transform:uppercase;color:var(--text-dim)}
+.panel-body{padding:1.25rem}
+
+/* Form elements */
+.field{margin-bottom:1rem}
+.field label{display:block;font-size:.75rem;letter-spacing:.15em;color:var(--text-dim);margin-bottom:.35rem;text-transform:uppercase}
+.field input,.field select,.field textarea{
+  width:100%;padding:.7rem .9rem;background:var(--bg);border:1px solid var(--border);
+  color:var(--text);font-family:var(--mono);font-size:1rem;border-radius:var(--radius);
+  outline:none;transition:border-color .2s,box-shadow .2s;
+}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--green);box-shadow:0 0 8px rgba(0,255,0,.2)}
+.field select{cursor:pointer;appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%2394a3b8'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right .8rem center;padding-right:2rem;
+}
+.field textarea{resize:vertical;min-height:60px}
+
+/* Buttons */
+.btn{
+  display:inline-flex;align-items:center;gap:.5rem;padding:.7rem 1.3rem;
+  font-family:var(--mono);font-size:.875rem;letter-spacing:.1em;
+  border:1px solid var(--border);border-radius:var(--radius);
+  cursor:pointer;transition:all .2s ease;text-transform:uppercase;
+  background:var(--bg);color:var(--text);
+}
+.btn:hover{border-color:var(--text-dim);background:var(--bg2)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn-red{
+  background:linear-gradient(180deg,#b91c1c,#7f1d1d);
+  border-color:#b91c1c;color:#fff;
+  box-shadow:0 0 6px rgba(255,0,0,.2);
+}
+.btn-red:hover:not(:disabled){box-shadow:0 0 20px rgba(255,0,0,.5);background:#dc2626;transform:scale(1.04)}
+.btn-red:active:not(:disabled){transform:scale(.97)}
+.btn-amber{
+  background:linear-gradient(180deg,var(--amber-dim),#78350f);
+  border-color:var(--amber-dim);color:var(--amber);
+  box-shadow:0 0 6px rgba(245,158,11,.15);
+}
+.btn-amber:hover:not(:disabled){box-shadow:0 0 20px rgba(245,158,11,.4);transform:scale(1.04)}
+.btn-amber:active:not(:disabled){transform:scale(.97)}
+.btn-cyan{
+  background:linear-gradient(180deg,var(--cyan-dim),#164e63);
+  border-color:var(--cyan-dim);color:var(--cyan);
+  box-shadow:0 0 6px rgba(6,182,212,.15);
+}
+.btn-cyan:hover:not(:disabled){box-shadow:0 0 20px rgba(6,182,212,.4);transform:scale(1.04)}
+.btn-cyan:active:not(:disabled){transform:scale(.97)}
+.btn-green{
+  background:linear-gradient(180deg,#166534,#14532d);
+  border-color:#16a34a;color:var(--green);
+  box-shadow:0 0 6px rgba(0,255,0,.15);
+}
+.btn-green:hover:not(:disabled){box-shadow:0 0 20px rgba(0,255,0,.4);transform:scale(1.04)}
+.btn-green:active:not(:disabled){transform:scale(.97)}
+.btn[disabled][title]{position:relative}
+.btn[disabled]:hover::after{
+  content:attr(title);position:absolute;bottom:110%;left:50%;transform:translateX(-50%);
+  padding:.3rem .6rem;background:#1e293b;color:var(--text-dim);font-size:.7rem;
+  border:1px solid var(--border);border-radius:3px;white-space:nowrap;z-index:10;
+  pointer-events:none;
+}
+.btn-lg{padding:.9rem 2rem;font-size:1rem;letter-spacing:.2em}
+.btn-block{width:100%;justify-content:center}
+
+/* Entity list */
+.entity-list{list-style:none;margin-top:.75rem}
+.entity-item{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:.6rem .85rem;border:1px solid var(--border);border-radius:var(--radius);
+  margin-bottom:.4rem;font-size:.875rem;background:var(--bg);
+}
+.entity-item .etype{
+  display:inline-block;padding:.2rem .5rem;border-radius:2px;font-size:.7rem;
+  letter-spacing:.1em;text-transform:uppercase;margin-right:.5rem;
+  background:var(--red-dim);color:var(--red);border:1px solid var(--red-dim);
+}
+.entity-item .eval{color:var(--text)}
+.entity-item .remove{cursor:pointer;color:var(--text-muted);font-size:1rem}
+.entity-item .remove:hover{color:var(--red)}
+.entity-status{font-size:.7rem;padding:.15rem .45rem;border-radius:2px;letter-spacing:.05em}
+.entity-status.pending{color:var(--text-dim);border:1px solid var(--text-muted)}
+.entity-status.running{color:var(--amber);border:1px solid var(--amber-dim);animation:pulse 1s infinite}
+.entity-status.complete{color:var(--green);border:1px solid var(--green-dim)}
+
+/* Run status */
+.run-status{
+  text-align:center;padding:1.5rem;font-size:1rem;color:var(--amber);
+  display:none;
+}
+.run-status.active{display:block}
+.blink{animation:blink 1s step-end infinite}
+@keyframes blink{50%{opacity:0}}
+
+/* Findings */
+.findings-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:1rem;margin-top:1rem}
+.finding-card{
+  background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);
+  padding:1rem;position:relative;border-left:3px solid var(--border);
+}
+.finding-card.sev-critical{border-left-color:#dc2626}
+.finding-card.sev-high{border-left-color:#f97316}
+.finding-card.sev-medium{border-left-color:#eab308}
+.finding-card.sev-low{border-left-color:#3b82f6}
+.finding-card.sev-info{border-left-color:#22c55e}
+.finding-card.sev-error{border-left-color:#6b7280}
+.finding-tool{font-size:.75rem;letter-spacing:.1em;color:var(--text-dim);text-transform:uppercase}
+.finding-severity{
+  position:absolute;top:.75rem;right:.75rem;font-size:.65rem;letter-spacing:.1em;
+  padding:.15rem .5rem;border-radius:2px;text-transform:uppercase;font-weight:bold;
+}
+.sev-critical .finding-severity{background:rgba(220,38,38,.2);color:#dc2626}
+.sev-high .finding-severity{background:rgba(249,115,22,.2);color:#f97316}
+.sev-medium .finding-severity{background:rgba(234,179,8,.2);color:#eab308}
+.sev-low .finding-severity{background:rgba(59,130,246,.2);color:#3b82f6}
+.sev-info .finding-severity{background:rgba(34,197,94,.2);color:#22c55e}
+.sev-error .finding-severity{background:rgba(107,114,128,.2);color:#6b7280}
+.finding-summary{margin-top:.5rem;font-size:.875rem;color:var(--text);line-height:1.5}
+.finding-entity{font-size:.75rem;color:var(--cyan);margin-top:.5rem}
+.finding-meta{margin-top:.6rem;display:flex;flex-wrap:wrap;gap:.4rem}
+.finding-meta .tag{
+  font-size:.65rem;padding:.15rem .45rem;border-radius:2px;
+  background:rgba(255,255,255,.05);color:var(--text-dim);border:1px solid var(--border);
+}
+.finding-actions{margin-top:.6rem;display:flex;flex-wrap:wrap;gap:.4rem}
+.finding-actions .btn{font-size:.7rem;padding:.35rem .65rem}
+.platforms-list{margin-top:.4rem;font-size:.8rem;color:var(--text-dim);line-height:1.6}
+.platforms-list span{
+  display:inline-block;padding:.15rem .45rem;margin:.1rem;border-radius:2px;
+  background:rgba(6,182,212,.1);color:var(--cyan);border:1px solid rgba(6,182,212,.2);
+}
+
+/* Patterns / Analysis */
+.pattern-card{
+  background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);
+  padding:1rem;margin-bottom:.75rem;border-left:3px solid var(--amber);
+}
+.pattern-card.type-summary{border-left-color:var(--cyan)}
+.pattern-card.type-relationship{border-left-color:var(--amber)}
+.pattern-card.type-anomaly{border-left-color:var(--red)}
+.pattern-card.type-lead{border-left-color:var(--green)}
+.pattern-type{font-size:.7rem;letter-spacing:.15em;text-transform:uppercase;margin-bottom:.4rem}
+.type-summary .pattern-type{color:var(--cyan)}
+.type-relationship .pattern-type{color:var(--amber)}
+.type-anomaly .pattern-type{color:var(--red)}
+.type-lead .pattern-type{color:var(--green)}
+.pattern-desc{font-size:.875rem;line-height:1.6;color:var(--text)}
+.pattern-conf{font-size:.7rem;color:var(--text-dim);margin-top:.4rem}
+
+/* Terminal */
+.terminal{
+  position:fixed;bottom:0;left:0;right:0;height:180px;z-index:100;
+  background:var(--bg);border-top:1px solid var(--border);
+  display:flex;flex-direction:column;
+}
+.terminal-head{
+  padding:.4rem 1rem;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+  background:rgba(255,255,255,.02);flex-shrink:0;
+}
+.terminal-head .label{font-size:.7rem;letter-spacing:.15em;color:var(--text-dim);text-transform:uppercase}
+.terminal-toggle{cursor:pointer;color:var(--text-dim);font-size:.8rem;background:none;border:none;font-family:var(--mono)}
+.terminal-toggle:hover{color:var(--text)}
+.terminal-body{
+  flex:1;overflow-y:auto;padding:.5rem 1rem;font-size:.875rem;line-height:1.7;
+  font-family:'Share Tech Mono',monospace;
+}
+.terminal.collapsed{height:32px}
+.terminal.collapsed .terminal-body{display:none}
+.log-line{white-space:pre-wrap;word-break:break-all}
+.log-line.info{color:var(--green)}
+.log-line.error{color:var(--red)}
+.log-line.warn{color:var(--amber)}
+.log-line.system{color:var(--cyan)}
+
+/* Misc */
+.hidden{display:none!important}
+.mt-1{margin-top:.75rem}
+.mt-2{margin-top:1.5rem}
+.text-center{text-align:center}
+.text-dim{color:var(--text-dim)}
+.text-sm{font-size:.8rem}
+
+/* Active Investigations Table */
+.inv-table{width:100%;border-collapse:collapse;font-size:.875rem}
+.inv-table th{text-align:left;padding:.5rem .75rem;font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--text-dim);border-bottom:1px solid var(--border)}
+.inv-table td{padding:.6rem .75rem;border-bottom:1px solid var(--border);cursor:pointer}
+.inv-table tr:hover td{background:rgba(0,255,0,.06)}
+.inv-table tr.selected td{background:rgba(0,255,0,.12);color:var(--green)}
+.inv-table tr.demo-highlight td{
+  box-shadow:inset 0 0 0 1px var(--green),0 0 8px rgba(0,255,0,.2);
+}
+
+/* Welcome banner */
+.welcome-banner{
+  background:#1e3a5f;padding:1rem;margin:.75rem 0;border-radius:6px;
+  border:1px solid #00ff9d;text-align:center;font-size:.9rem;line-height:1.6;
+}
+.welcome-banner strong{color:#00ff9d}
+.welcome-banner .wb-sub{color:var(--text-dim);font-size:.85rem;margin-top:.3rem}
+
+/* Privacy disclaimer */
+.privacy-banner{
+  background:rgba(0,255,0,.05);padding:.75rem 1rem;margin-bottom:1rem;border-radius:var(--radius);
+  border:1px solid rgba(0,255,0,.2);text-align:center;font-size:.8rem;line-height:1.5;
+  color:var(--text-dim);
+}
+.privacy-banner i{color:var(--green);margin-right:.4rem}
+.privacy-banner strong{color:var(--green)}
+
+/* Freemium bar */
+.freemium-bar{
+  display:flex;align-items:center;justify-content:center;gap:1rem;
+  padding:.6rem 1rem;margin-bottom:1rem;border-radius:var(--radius);
+  background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);
+  font-size:.85rem;flex-wrap:wrap;
+}
+.freemium-bar .runs-left{color:var(--amber);font-weight:bold}
+.freemium-bar .premium-badge{color:var(--green);font-weight:bold}
+.freemium-bar .progress-wrap{
+  width:120px;height:6px;background:var(--border);border-radius:3px;overflow:hidden;
+}
+.freemium-bar .progress-fill{
+  height:100%;background:var(--green);border-radius:3px;
+  box-shadow:0 0 6px rgba(0,255,0,.4);transition:width .3s;
+}
+
+/* PayPal upgrade modal */
+.paywall-overlay{
+  position:fixed;top:0;left:0;right:0;bottom:0;z-index:500;
+  background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;
+}
+.paywall-overlay.hidden{display:none}
+.paywall-box{
+  width:420px;max-width:92vw;background:var(--panel);border:1px solid var(--amber);
+  border-radius:var(--radius);padding:2rem;text-align:center;
+  box-shadow:0 0 40px rgba(245,158,11,.2);
+}
+.paywall-box h2{color:var(--amber);font-size:1.25rem;letter-spacing:.15em;margin-bottom:.75rem}
+.paywall-box p{color:var(--text-dim);font-size:.85rem;line-height:1.5;margin-bottom:1.25rem}
+.paywall-box .price{font-size:1.5rem;color:var(--green);margin-bottom:1rem}
+.paywall-box ul{
+  text-align:left;list-style:none;margin-bottom:1.25rem;font-size:.85rem;color:var(--text);
+}
+.paywall-box ul li{padding:.3rem 0}
+.paywall-box ul li i{color:var(--green);margin-right:.5rem;width:1rem;text-align:center}
+#paypal-button-container{min-height:50px;margin-bottom:.75rem}
+.paywall-close{
+  background:none;border:1px solid var(--border);color:var(--text-dim);
+  padding:.4rem 1rem;border-radius:var(--radius);cursor:pointer;font-family:var(--mono);
+  font-size:.8rem;
+}
+.paywall-close:hover{color:var(--text);border-color:var(--text-dim)}
+
+/* Consent overlay */
+.consent-overlay{
+  position:fixed;top:0;left:0;right:0;bottom:0;z-index:600;
+  background:rgba(0,0,0,.9);display:flex;align-items:center;justify-content:center;
+}
+.consent-overlay.hidden{display:none}
+.consent-box{
+  width:440px;max-width:92vw;background:var(--panel);border:1px solid var(--green);
+  border-radius:var(--radius);padding:2rem;text-align:center;
+  box-shadow:0 0 30px rgba(0,255,0,.15);
+}
+.consent-box h3{color:var(--green);font-size:1.1rem;letter-spacing:.15em;margin-bottom:1rem}
+.consent-box p{color:var(--text-dim);font-size:.85rem;line-height:1.6;margin-bottom:1rem}
+.consent-box label{
+  display:flex;align-items:flex-start;gap:.6rem;text-align:left;
+  font-size:.8rem;color:var(--text);margin-bottom:1.25rem;cursor:pointer;
+}
+.consent-box input[type="checkbox"]{
+  margin-top:.2rem;accent-color:var(--green);width:16px;height:16px;flex-shrink:0;
+}
+
+/* Footer */
+.site-footer{
+  text-align:center;padding:1.25rem;color:var(--text-dim);font-size:.85rem;
+  border-top:1px solid var(--border);margin-top:2rem;
+}
+.site-footer .upgrade-hint{color:var(--amber);font-size:.8rem}
+.inv-empty{text-align:center;padding:1.5rem;color:var(--text-dim);font-size:.85rem}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border-light);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--text-muted)}
+
+/* Stats row */
+.stats-row{display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:1.5rem}
+.stat-box{
+  flex:1;min-width:120px;padding:.75rem 1rem;background:var(--panel);
+  border:1px solid var(--border);border-radius:var(--radius);text-align:center;
+}
+.stat-box .val{font-size:1.5rem;color:var(--green);font-weight:bold}
+.stat-box .lbl{font-size:.65rem;letter-spacing:.15em;color:var(--text-dim);text-transform:uppercase;margin-top:.2rem}
+
+/* Auth Overlay */
+.auth-overlay{
+  position:fixed;top:0;left:0;right:0;bottom:0;z-index:1000;
+  background:var(--bg);display:flex;align-items:center;justify-content:center;
+  background-image:
+    linear-gradient(rgba(0,255,0,.02) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,255,0,.02) 1px,transparent 1px);
+  background-size:40px 40px;
+}
+.auth-overlay.hidden{display:none}
+.auth-box{
+  width:400px;max-width:92vw;background:var(--panel);border:1px solid var(--border);
+  border-radius:var(--radius);overflow:hidden;
+}
+.auth-box .panel-head{padding:.75rem 1rem;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:.6rem;background:rgba(255,255,255,.02)}
+.auth-box .panel-body{padding:1.25rem}
+.auth-tabs{display:flex;border-bottom:1px solid var(--border)}
+.auth-tab{
+  flex:1;padding:.65rem;text-align:center;font-size:.8rem;letter-spacing:.12em;
+  text-transform:uppercase;cursor:pointer;color:var(--text-dim);background:none;
+  border:none;font-family:var(--mono);border-bottom:2px solid transparent;
+}
+.auth-tab.active{color:var(--green);border-bottom-color:var(--green)}
+.auth-tab:hover{color:var(--text)}
+.auth-error{color:var(--red);font-size:.8rem;margin-bottom:.75rem;display:none}
+.auth-info{color:var(--green);font-size:.8rem;margin-bottom:.75rem;display:none}
+.user-bar{display:flex;align-items:center;gap:1rem;font-size:.8rem}
+.user-bar .user-email{color:var(--cyan)}
+.user-bar .user-tier{padding:.15rem .5rem;border-radius:2px;font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;background:rgba(0,255,0,.1);color:var(--green);border:1px solid var(--green-dim)}
+.user-bar .btn-logout{margin-left:auto}
+
+/* OPSEC Threat Meter */
+.threat-meter{
+  font-size:.8rem;letter-spacing:.1em;padding:.25rem .6rem;border-radius:3px;
+  background:#1a1a2e;border:1px solid var(--amber);color:var(--amber);
+  white-space:nowrap;
+}
+#threat-level{font-weight:900;text-transform:uppercase}
+.threat-minimal{color:#00ff9d;border-color:#00ff9d;background:rgba(0,255,157,.08)}
+.threat-guarded{color:var(--cyan);border-color:var(--cyan);background:rgba(6,182,212,.08)}
+.threat-elevated{color:var(--amber);border-color:var(--amber);background:rgba(245,158,11,.1)}
+.threat-high{color:var(--red);border-color:var(--red);background:rgba(255,0,0,.1);animation:threat-pulse 1.5s infinite}
+.threat-critical{color:#ff0066;border-color:#ff0066;background:rgba(255,0,102,.15);animation:threat-pulse 1s infinite}
+@keyframes threat-pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* Mission Clock */
+.mission-clock{text-align:right;line-height:1.3}
+.mission-clock .mc-local{font-size:1rem;color:#fff;font-weight:bold}
+.mission-clock .mc-zulu{font-size:.75rem;color:var(--text-dim);letter-spacing:.08em}
+
+/* Operator Dossier */
+.header-status{position:relative}
+.user-bar .user-email{cursor:pointer;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px}
+.user-bar .user-email:hover{color:#fff}
+.dossier{
+  position:absolute;top:100%;right:0;margin-top:.5rem;
+  background:var(--bg);border:1px solid var(--green);border-radius:var(--radius);
+  padding:1rem;width:280px;box-shadow:0 0 20px rgba(0,255,0,.15);z-index:200;
+  font-size:.85rem;line-height:1.7;
+}
+.dossier h4{
+  margin:0 0 .6rem;color:var(--green);border-bottom:1px solid var(--border);
+  padding-bottom:.4rem;text-align:center;font-size:.75rem;letter-spacing:.2em;
+}
+.dossier p{margin:.3rem 0;color:var(--text)}
+.dossier strong{color:var(--text-dim)}
+
+/* ─── Responsive: Tablet ─── */
+@media(max-width:900px){
+  .grid{grid-template-columns:1fr}
+  .findings-grid{grid-template-columns:1fr}
+}
+
+/* ─── Responsive: Mobile <768px ─── */
+@media(max-width:768px){
+  .header-inner{flex-direction:column;text-align:center}
+  .header-status{flex-wrap:wrap;justify-content:center}
+  .brand h1{font-size:1.35rem;letter-spacing:.15em}
+  .container{padding:1rem}
+  .grid{grid-template-columns:1fr}
+  .findings-grid{grid-template-columns:1fr}
+  .btn-lg{width:100%;justify-content:center;padding:.9rem 1rem}
+  .btn-block{padding:.8rem}
+  .panel-body{padding:1rem}
+  .field input,.field select,.field textarea{padding:.8rem;font-size:1rem}
+  .terminal{height:140px}
+  body{padding-bottom:160px}
+  .threat-meter{font-size:.7rem}
+  .dossier{right:-1rem;width:260px}
+  .freemium-bar{flex-direction:column;gap:.5rem}
+  .stats-row{gap:.5rem}
+  .stat-box{min-width:70px;padding:.5rem}
+  .stat-box .val{font-size:1.25rem}
+  #panelRun .panel-body{display:flex;flex-direction:column;gap:.75rem;align-items:stretch}
+  #panelRun .btn-lg{margin-left:0!important}
+}
+</style>
+</head>
+<body>
+
+<!-- CONSENT OVERLAY (first visit) -->
+<div class="consent-overlay hidden" id="consentOverlay">
+  <div class="consent-box">
+    <h3><i class="fa-solid fa-shield-halved"></i> VALKYRIE PRIVACY NOTICE</h3>
+    <p>VALKYRIE stores <strong>no personal data</strong>. All lookups are processed in-memory and discarded after response. We collect only anonymous aggregate usage stats (total runs, target type distribution, error rate) to improve the platform.</p>
+    <label>
+      <input type="checkbox" id="consentCheck">
+      I agree to anonymous aggregate usage logging for service improvement. I can opt out anytime via the footer link.
+    </label>
+    <button class="btn btn-green btn-block" id="btnConsent" onclick="acceptConsent()" disabled>
+      <i class="fa-solid fa-check"></i> Accept &amp; Continue
+    </button>
+  </div>
+</div>
+
+<!-- AUTH OVERLAY -->
+<div class="auth-overlay" id="authOverlay">
+  <div class="auth-box">
+    <div class="panel-head">
+      <span class="dot" style="background:var(--green)"></span>
+      <span class="label"><i class="fa-solid fa-shield-halved"></i> VALKYRIE OSINT — ACCESS CONTROL</span>
+    </div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tabLogin" onclick="showAuthTab('login')"><i class="fa-solid fa-right-to-bracket"></i> Login</button>
+      <button class="auth-tab" id="tabRegister" onclick="showAuthTab('register')"><i class="fa-solid fa-user-plus"></i> Register</button>
+    </div>
+    <div class="panel-body">
+      <div class="auth-error" id="authError"></div>
+      <div class="auth-info" id="authInfo"></div>
+      <!-- Login Form -->
+      <div id="loginForm">
+        <div class="field">
+          <label>Email</label>
+          <input type="email" id="loginEmail" placeholder="operator@valkyrie.io">
+        </div>
+        <div class="field">
+          <label>Password</label>
+          <input type="password" id="loginPassword" placeholder="&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;">
+        </div>
+        <button class="btn btn-green btn-block" onclick="doLogin()"><i class="fa-solid fa-lock"></i> Authenticate</button>
+      </div>
+      <!-- Register Form -->
+      <div id="registerForm" class="hidden">
+        <div class="field">
+          <label>Email</label>
+          <input type="email" id="regEmail" placeholder="operator@valkyrie.io">
+        </div>
+        <div class="field">
+          <label>Password (min 6 chars)</label>
+          <input type="password" id="regPassword" placeholder="&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;">
+        </div>
+        <div class="field">
+          <label>Confirm Password</label>
+          <input type="password" id="regPassword2" placeholder="&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;">
+        </div>
+        <button class="btn btn-green btn-block" onclick="doRegister()"><i class="fa-solid fa-user-shield"></i> Create Account</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PAYWALL OVERLAY -->
+<div class="paywall-overlay hidden" id="paywallOverlay">
+  <div class="paywall-box">
+    <h2><i class="fa-solid fa-bolt"></i> UPGRADE TO PREMIUM</h2>
+    <p>You've used all 5 free runs for today. Upgrade for unlimited access.</p>
+    <div class="price">$9.99 <span style="font-size:.8rem;color:var(--text-dim)">/month</span></div>
+    <ul>
+      <li><i class="fa-solid fa-infinity"></i> Unlimited OSINT runs per day</li>
+      <li><i class="fa-solid fa-brain"></i> Full AI Analysis (unlimited)</li>
+      <li><i class="fa-solid fa-gauge-high"></i> Priority processing</li>
+      <li><i class="fa-solid fa-shield-halved"></i> Advanced source modules</li>
+    </ul>
+    <div id="paypal-button-container"></div>
+    <button class="paywall-close" onclick="closePaywall()">Maybe Later</button>
+  </div>
+</div>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="header-inner">
+    <div class="brand">
+      <h1><i class="fa-solid fa-shield-halved"></i> VALKYRIE OSINT</h1>
+      <div class="sub">Intelligence Collection Platform</div>
+    </div>
+    <div class="header-status">
+      <div class="user-bar hidden" id="userBar">
+        <span class="user-email" id="userEmail"></span>
+        <span class="user-tier" id="userTier"></span>
+        <button class="btn btn-logout" onclick="doLogout()" style="font-size:.75rem;padding:.35rem .65rem"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
+      </div>
+      <!-- Operator Dossier Dropdown -->
+      <div id="dossierDropdown" class="dossier hidden">
+        <h4><i class="fa-solid fa-id-badge"></i> OPERATOR DOSSIER</h4>
+        <p><strong>Clearance:</strong> <span id="dossierClearance">OPERATOR</span></p>
+        <p><strong>Access Level:</strong> <span id="dossierTier">TIER-1</span></p>
+        <p><strong>Session ID:</strong> <span id="dossierSession">----</span></p>
+        <p><strong>Last Login:</strong> <span id="dossierLogin">--</span></p>
+        <p><strong>Projects:</strong> <span id="dossierProjects">0</span></p>
+      </div>
+      <span><span class="status-dot"></span> <span class="text-dim text-sm">ONLINE</span></span>
+      <span class="threat-meter" id="opsecThreat">OPSEC: <span id="threatLevel">--</span></span>
+      <div class="mission-clock">
+        <div class="mc-local" id="mcLocal">--:--:--</div>
+        <div class="mc-zulu">ZULU <span id="mcZulu">--:--:--</span></div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- PRIVACY DISCLAIMER -->
+  <div class="privacy-banner">
+    <i class="fa-solid fa-lock"></i>
+    <strong>VALKYRIE stores no personal data.</strong> In-memory processing only. All results discarded after response. Aggregate usage stats (no PII) help improve the tool.
+  </div>
+
+  <!-- FREEMIUM BAR -->
+  <div class="freemium-bar" id="freemiumBar">
+    <i class="fa-solid fa-gauge" style="color:var(--amber)"></i>
+    <span class="runs-left" id="runsLeftText">5/5 free runs left today</span>
+    <div class="progress-wrap">
+      <div class="progress-fill" id="runsProgress" style="width:100%"></div>
+    </div>
+    <button class="btn btn-amber" style="font-size:.75rem;padding:.3rem .7rem" onclick="showPaywall()" id="btnUpgradeSmall">
+      <i class="fa-solid fa-bolt"></i> Upgrade
+    </button>
+  </div>
+
+  <!-- WELCOME BANNER -->
+  <div class="welcome-banner hidden" id="welcomeBanner">
+    <strong id="welcomeUser">Welcome back!</strong><br>
+    <div class="wb-sub">Explore the DEMO project or create a new one. Add phone targets, execute OSINT runs, and view AI analysis. NumVerify carrier lookup active. Feedback to @L7Dare!</div>
+  </div>
+
+  <!-- ACTIVE INVESTIGATIONS -->
+  <div class="panel hidden" id="panelInvestigations" style="margin-bottom:1.5rem">
+    <div class="panel-head">
+      <span class="dot" style="background:var(--green)"></span>
+      <span class="label"><i class="fa-solid fa-folder-open"></i> Active Investigations</span>
+    </div>
+    <div class="panel-body" id="investigationsBody"></div>
+  </div>
+
+  <!-- STATS ROW -->
+  <div class="stats-row" id="statsRow">
+    <div class="stat-box"><div class="val" id="statEntities">0</div><div class="lbl"><i class="fa-solid fa-crosshairs"></i> Entities</div></div>
+    <div class="stat-box"><div class="val" id="statFindings">0</div><div class="lbl"><i class="fa-solid fa-magnifying-glass"></i> Findings</div></div>
+    <div class="stat-box"><div class="val" id="statPatterns">0</div><div class="lbl"><i class="fa-solid fa-brain"></i> Patterns</div></div>
+    <div class="stat-box"><div class="val" id="statSeverity">--</div><div class="lbl"><i class="fa-solid fa-triangle-exclamation"></i> Max Severity</div></div>
+  </div>
+
+  <div class="grid">
+
+    <!-- NEW INVESTIGATION -->
+    <div class="panel" id="panelNewProject">
+      <div class="panel-head">
+        <span class="dot" style="background:var(--green)"></span>
+        <span class="label"><i class="fa-solid fa-plus-circle"></i> New Investigation</span>
+      </div>
+      <div class="panel-body">
+        <div class="field">
+          <label>Investigation Name</label>
+          <input type="text" id="projName" placeholder="Operation Nightfall">
+        </div>
+        <div class="field">
+          <label>Target Description</label>
+          <textarea id="projDesc" placeholder="Brief description of investigation targets and objectives..."></textarea>
+        </div>
+        <button class="btn btn-green btn-block" id="btnCreateProject" onclick="createProject()">
+          <i class="fa-solid fa-rocket"></i> Initialize Project
+        </button>
+        <div class="mt-1 text-center text-dim text-sm hidden" id="projectIdDisplay"></div>
+      </div>
+    </div>
+
+    <!-- TARGET ACQUISITION -->
+    <div class="panel" id="panelTargets">
+      <div class="panel-head">
+        <span class="dot" style="background:var(--amber)"></span>
+        <span class="label"><i class="fa-solid fa-crosshairs"></i> Target Acquisition</span>
+      </div>
+      <div class="panel-body">
+        <div class="field">
+          <label>Entity Type</label>
+          <select id="entityType">
+            <option value="phone">Phone Number</option>
+            <option value="email">Email Address</option>
+            <option value="username">Username</option>
+            <option value="domain">Domain</option>
+            <option value="ip">IP Address</option>
+            <option value="name">Name</option>
+            <option value="social">Social Profile</option>
+            <option value="file">File</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Target Value</label>
+          <input type="text" id="entityValue" placeholder="e.g. +15551234567">
+        </div>
+        <div class="field">
+          <label>Label (optional)</label>
+          <input type="text" id="entityLabel" placeholder="e.g. Suspect primary phone">
+        </div>
+        <button class="btn btn-amber btn-block" id="btnAddEntity" onclick="addEntity()" disabled>
+          <i class="fa-solid fa-bullseye"></i> Add Target
+        </button>
+        <ul class="entity-list" id="entityList"></ul>
+      </div>
+    </div>
+
+    <!-- EXECUTE RUN -->
+    <div class="panel full-width" id="panelRun">
+      <div class="panel-head">
+        <span class="dot" style="background:var(--green)"></span>
+        <span class="label"><i class="fa-solid fa-satellite-dish"></i> Intelligence Operations</span>
+      </div>
+      <div class="panel-body text-center">
+        <button class="btn btn-red btn-lg" id="btnRun" onclick="executeRun()" disabled title="Select an investigation first">
+          <i class="fa-solid fa-play"></i> Execute OSINT Run
+        </button>
+        <button class="btn btn-cyan btn-lg" id="btnAnalyze" onclick="runAnalysis()" disabled title="Select an investigation first" style="margin-left:1rem">
+          <i class="fa-solid fa-brain"></i> Run AI Analysis
+        </button>
+        <div class="run-status" id="runStatus">
+          <span class="blink">&#x2588;</span> <i class="fa-solid fa-spinner fa-spin"></i> COLLECTING INTELLIGENCE...
+        </div>
+        <div class="run-status" id="analyzeStatus">
+          <span class="blink">&#x2588;</span> <i class="fa-solid fa-spinner fa-spin"></i> RUNNING AI ANALYSIS...
+        </div>
+      </div>
+    </div>
+
+    <!-- FINDINGS -->
+    <div class="panel full-width hidden" id="panelFindings">
+      <div class="panel-head">
+        <span class="dot" style="background:var(--cyan)"></span>
+        <span class="label"><i class="fa-solid fa-file-shield"></i> Intelligence Findings</span>
+      </div>
+      <div class="panel-body">
+        <div class="findings-grid" id="findingsGrid"></div>
+      </div>
+    </div>
+
+    <!-- ANALYSIS / PATTERNS -->
+    <div class="panel full-width hidden" id="panelPatterns">
+      <div class="panel-head">
+        <span class="dot" style="background:var(--amber)"></span>
+        <span class="label"><i class="fa-solid fa-diagram-project"></i> AI Analysis &mdash; Patterns &amp; Insights</span>
+      </div>
+      <div class="panel-body" id="patternsContainer"></div>
+    </div>
+
+  </div><!-- /grid -->
+
+  <!-- FOOTER -->
+  <footer class="site-footer">
+    VALKYRIE OSINT v2.0 | Built by Travis (@L7Dare)<br>
+    <span class="upgrade-hint" id="footerUpgrade">Free Tier Active &mdash; <a href="#" onclick="showPaywall();return false" style="color:var(--amber);text-decoration:underline">Upgrade to Premium</a> for Unlimited Runs &amp; Advanced Sources</span>
+    <br><span style="font-size:.7rem;color:var(--text-muted);margin-top:.3rem;display:inline-block"><a href="#" onclick="optOutStats();return false" style="color:var(--text-muted)">Opt-out of anonymous stats</a></span>
+  </footer>
+
+</div><!-- /container -->
+
+<!-- TERMINAL -->
+<div class="terminal" id="terminal">
+  <div class="terminal-head">
+    <span class="label"><i class="fa-solid fa-terminal"></i> System Log</span>
+    <button class="terminal-toggle" onclick="toggleTerminal()">[ _ ]</button>
+  </div>
+  <div class="terminal-body" id="terminalBody"></div>
+</div>
+
+<!-- PayPal SDK (placeholder client-id — replace with your real one) -->
+<script src="https://www.paypal.com/sdk/js?client-id=PLACEHOLDER_CLIENT_ID&vault=true&intent=subscription" data-sdk-integration-source="button-factory"></script>
+
+<script>
+/* ─── State ─── */
+let projectId = null;
+let entities = [];
+
+/* ─── Aggregate Stats (no PII) ─── */
+const aggStats = {
+  total_runs: parseInt(localStorage.getItem('vk_agg_total_runs') || '0'),
+  target_types: JSON.parse(localStorage.getItem('vk_agg_target_types') || '{}'),
+  errors: parseInt(localStorage.getItem('vk_agg_errors') || '0'),
+  total_analyses: parseInt(localStorage.getItem('vk_agg_total_analyses') || '0')
+};
+function saveAggStats(){
+  localStorage.setItem('vk_agg_total_runs', String(aggStats.total_runs));
+  localStorage.setItem('vk_agg_target_types', JSON.stringify(aggStats.target_types));
+  localStorage.setItem('vk_agg_errors', String(aggStats.errors));
+  localStorage.setItem('vk_agg_total_analyses', String(aggStats.total_analyses));
+}
+function recordRun(entityTypes){
+  if(localStorage.getItem('vk_stats_optout')==='1') return;
+  aggStats.total_runs++;
+  (entityTypes||[]).forEach(t=>{aggStats.target_types[t]=(aggStats.target_types[t]||0)+1});
+  saveAggStats();
+}
+function recordError(){
+  if(localStorage.getItem('vk_stats_optout')==='1') return;
+  aggStats.errors++;
+  saveAggStats();
+}
+function recordAnalysis(){
+  if(localStorage.getItem('vk_stats_optout')==='1') return;
+  aggStats.total_analyses++;
+  saveAggStats();
+}
+function optOutStats(){
+  localStorage.setItem('vk_stats_optout','1');
+  alert('Opted out of anonymous aggregate stats. No further data will be recorded.');
+}
+
+/* ─── Freemium System ─── */
+const FREE_DAILY_LIMIT = 5;
+function getRunCount(){
+  const stored = localStorage.getItem('vk_run_counter');
+  if(stored){
+    const data = JSON.parse(stored);
+    const today = new Date().toISOString().slice(0,10);
+    if(data.date === today) return data.count;
+  }
+  return 0;
+}
+function incrementRunCount(){
+  const today = new Date().toISOString().slice(0,10);
+  const count = getRunCount() + 1;
+  localStorage.setItem('vk_run_counter', JSON.stringify({date:today, count}));
+  updateFreemiumUI();
+  return count;
+}
+function isPremium(){
+  return localStorage.getItem('vk_isPremium') === 'true';
+}
+function canRun(){
+  if(isPremium()) return true;
+  return getRunCount() < FREE_DAILY_LIMIT;
+}
+function updateFreemiumUI(){
+  const bar = document.getElementById('freemiumBar');
+  const text = document.getElementById('runsLeftText');
+  const prog = document.getElementById('runsProgress');
+  const btnUp = document.getElementById('btnUpgradeSmall');
+  const footerUp = document.getElementById('footerUpgrade');
+
+  if(isPremium()){
+    text.innerHTML = '<span class="premium-badge"><i class="fa-solid fa-crown"></i> PREMIUM ACTIVE</span>';
+    prog.style.width = '100%';
+    prog.style.background = 'var(--green)';
+    btnUp.classList.add('hidden');
+    bar.style.borderColor = 'rgba(0,255,0,.25)';
+    bar.style.background = 'rgba(0,255,0,.05)';
+    footerUp.innerHTML = '<span style="color:var(--green)"><i class="fa-solid fa-crown"></i> Premium Active &mdash; Unlimited Runs &amp; Full AI</span>';
+    return;
+  }
+
+  const used = getRunCount();
+  const left = Math.max(0, FREE_DAILY_LIMIT - used);
+  text.textContent = left + '/' + FREE_DAILY_LIMIT + ' free runs left today';
+  prog.style.width = Math.round((left / FREE_DAILY_LIMIT) * 100) + '%';
+
+  if(left === 0){
+    prog.style.background = 'var(--red)';
+    text.style.color = 'var(--red)';
+  } else if(left <= 2){
+    prog.style.background = 'var(--amber)';
+  } else {
+    prog.style.background = 'var(--green)';
+  }
+}
+
+/* ─── PayPal / Paywall ─── */
+function showPaywall(){
+  document.getElementById('paywallOverlay').classList.remove('hidden');
+  renderPayPalButton();
+}
+function closePaywall(){
+  document.getElementById('paywallOverlay').classList.add('hidden');
+}
+let paypalRendered = false;
+function renderPayPalButton(){
+  if(paypalRendered) return;
+  if(typeof paypal === 'undefined'){
+    document.getElementById('paypal-button-container').innerHTML = '<p style="color:var(--text-dim);font-size:.8rem">PayPal SDK loading... Refresh if needed.</p>';
+    return;
+  }
+  paypalRendered = true;
+  paypal.Buttons({
+    style: {shape:'rect', color:'gold', layout:'vertical', label:'subscribe'},
+    createSubscription: function(data, actions){
+      return actions.subscription.create({
+        plan_id: 'PLACEHOLDER_PLAN_ID'  // Replace with your real PayPal plan ID
+      });
+    },
+    onApprove: function(data){
+      localStorage.setItem('vk_isPremium', 'true');
+      updateFreemiumUI();
+      closePaywall();
+      log('PREMIUM: Subscription activated! Subscription ID: ' + data.subscriptionID, 'info');
+      alert('Premium activated! You now have unlimited runs.');
+    },
+    onError: function(err){
+      log('PAYPAL ERROR: ' + err, 'error');
+    }
+  }).render('#paypal-button-container');
+}
+
+/* ─── Consent ─── */
+function checkConsent(){
+  if(localStorage.getItem('vk_consent_accepted') !== '1'){
+    document.getElementById('consentOverlay').classList.remove('hidden');
+  }
+}
+function acceptConsent(){
+  if(!document.getElementById('consentCheck').checked) return;
+  localStorage.setItem('vk_consent_accepted', '1');
+  document.getElementById('consentOverlay').classList.add('hidden');
+  log('CONSENT: Anonymous aggregate logging accepted', 'system');
+}
+document.addEventListener('DOMContentLoaded', function(){
+  const cb = document.getElementById('consentCheck');
+  cb.addEventListener('change', function(){
+    document.getElementById('btnConsent').disabled = !cb.checked;
+  });
+});
+
+/* ─── Mission Clock ─── */
+function updateMissionClock(){
+  const now=new Date();
+  const local=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0')+':'+String(now.getSeconds()).padStart(2,'0');
+  const zulu=now.toISOString().slice(11,19);
+  document.getElementById('mcLocal').textContent=local;
+  document.getElementById('mcZulu').textContent=zulu;
+}
+setInterval(updateMissionClock,1000);updateMissionClock();
+
+/* ─── OPSEC Threat Meter ─── */
+function setThreatLevel(level){
+  const el=document.getElementById('opsecThreat');
+  const lbl=document.getElementById('threatLevel');
+  lbl.textContent=level.toUpperCase();
+  el.className='threat-meter threat-'+level.toLowerCase();
+}
+function computeThreat(findings){
+  if(!findings||!findings.length){setThreatLevel('minimal');return}
+  const sevW={info:0,low:1,medium:2,high:4,critical:8,error:0};
+  let score=0;
+  findings.forEach(f=>{score+=(sevW[f.severity]||0)});
+  if(score>=20) setThreatLevel('critical');
+  else if(score>=12) setThreatLevel('high');
+  else if(score>=6) setThreatLevel('elevated');
+  else if(score>=2) setThreatLevel('guarded');
+  else setThreatLevel('minimal');
+}
+setThreatLevel('elevated');
+
+/* ─── Operator Dossier ─── */
+(function initDossier(){
+  const emailEl=document.getElementById('userEmail');
+  const dropdown=document.getElementById('dossierDropdown');
+  if(!emailEl||!dropdown) return;
+  emailEl.addEventListener('click',function(e){
+    e.stopPropagation();
+    dropdown.classList.toggle('hidden');
+  });
+  document.addEventListener('click',function(e){
+    if(!emailEl.contains(e.target)&&!dropdown.contains(e.target)){
+      dropdown.classList.add('hidden');
+    }
+  });
+})();
+
+/* ─── Terminal Log ─── */
+let _lastLogMsg='',_lastLogCount=0,_lastLogEl=null;
+function log(msg,type='info'){
+  const d=new Date();
+  const ts=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')+':'+String(d.getSeconds()).padStart(2,'0');
+  const body=document.getElementById('terminalBody');
+  if(msg===_lastLogMsg&&_lastLogEl){
+    _lastLogCount++;
+    _lastLogEl.textContent='['+ts+'] '+msg+' (x'+_lastLogCount+')';
+    body.scrollTop=body.scrollHeight;
+    return;
+  }
+  _lastLogMsg=msg;_lastLogCount=1;
+  const el=document.createElement('div');
+  el.className='log-line '+type;
+  el.textContent='['+ts+'] '+msg;
+  _lastLogEl=el;
+  body.appendChild(el);
+  body.scrollTop=body.scrollHeight;
+}
+function toggleTerminal(){
+  document.getElementById('terminal').classList.toggle('collapsed');
+}
+
+/* ─── Auth State ─── */
+let authToken=sessionStorage.getItem('jwt_token')||null;
+let currentUser=null;
+
+function getAuthHeader(){
+  if(!authToken) throw new Error('Not authenticated');
+  return 'Bearer '+authToken;
+}
+
+/* ─── Auth UI ─── */
+function showAuthTab(tab){
+  document.getElementById('tabLogin').classList.toggle('active',tab==='login');
+  document.getElementById('tabRegister').classList.toggle('active',tab==='register');
+  document.getElementById('loginForm').classList.toggle('hidden',tab!=='login');
+  document.getElementById('registerForm').classList.toggle('hidden',tab!=='register');
+  document.getElementById('authError').style.display='none';
+  document.getElementById('authInfo').style.display='none';
+}
+
+function showAuthError(msg){
+  const el=document.getElementById('authError');
+  el.textContent=msg;el.style.display='block';
+  document.getElementById('authInfo').style.display='none';
+}
+
+function showAuthInfo(msg){
+  const el=document.getElementById('authInfo');
+  el.textContent=msg;el.style.display='block';
+  document.getElementById('authError').style.display='none';
+}
+
+async function doRegister(){
+  const email=document.getElementById('regEmail').value.trim();
+  const pw=document.getElementById('regPassword').value;
+  const pw2=document.getElementById('regPassword2').value;
+  if(!email||!pw){showAuthError('Email and password required');return}
+  if(pw!==pw2){showAuthError('Passwords do not match');return}
+  if(pw.length<6){showAuthError('Password must be at least 6 characters');return}
+  try{
+    const res=await fetch('/api/v1/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:pw})});
+    if(!res.ok){const d=await res.json();throw new Error(d.detail||'Registration failed')}
+    showAuthInfo('Account created. You can now log in.');
+    showAuthTab('login');
+    document.getElementById('loginEmail').value=email;
+  }catch(e){showAuthError(e.message)}
+}
+
+async function doLogin(){
+  const email=document.getElementById('loginEmail').value.trim();
+  const pw=document.getElementById('loginPassword').value;
+  if(!email||!pw){showAuthError('Email and password required');return}
+  try{
+    const body=new URLSearchParams();
+    body.append('username',email);
+    body.append('password',pw);
+    const res=await fetch('/api/v1/auth/login',{method:'POST',body});
+    if(!res.ok){const d=await res.json();throw new Error(d.detail||'Login failed')}
+    const data=await res.json();
+    authToken=data.access_token;
+    sessionStorage.setItem('jwt_token',authToken);
+    await onAuthSuccess();
+  }catch(e){showAuthError(e.message)}
+}
+
+function doLogout(){
+  authToken=null;currentUser=null;
+  sessionStorage.removeItem('jwt_token');
+  sessionStorage.removeItem('projectId');
+  document.getElementById('authOverlay').classList.remove('hidden');
+  document.getElementById('userBar').classList.add('hidden');
+  document.getElementById('dossierDropdown').classList.add('hidden');
+  document.getElementById('welcomeBanner').classList.add('hidden');
+  setThreatLevel('elevated');
+  log('LOGOUT: Session terminated','warn');
+}
+
+async function onAuthSuccess(){
+  try{
+    const res=await fetch('/api/v1/auth/me',{headers:{'Authorization':'Bearer '+authToken}});
+    if(!res.ok) throw new Error('Token invalid');
+    currentUser=await res.json();
+  }catch(e){
+    authToken=null;sessionStorage.removeItem('jwt_token');
+    showAuthError('Session expired. Please log in again.');
+    return;
+  }
+  document.getElementById('authOverlay').classList.add('hidden');
+  document.getElementById('userBar').classList.remove('hidden');
+  document.getElementById('userEmail').textContent=currentUser.email;
+  document.getElementById('userTier').textContent=currentUser.tier.toUpperCase();
+  log('AUTH: Logged in as '+currentUser.email+' ['+currentUser.tier+']','system');
+  const wb=document.getElementById('welcomeBanner');
+  wb.classList.remove('hidden');
+  document.getElementById('welcomeUser').innerHTML='Welcome back, '+esc(currentUser.email)+' ['+currentUser.tier.toUpperCase()+' TIER]';
+  document.getElementById('dossierTier').textContent=currentUser.tier.toUpperCase();
+  document.getElementById('dossierSession').textContent=authToken?authToken.slice(-12).toUpperCase():'----';
+  document.getElementById('dossierLogin').textContent=new Date().toLocaleString();
+  // Check if user tier indicates premium from server
+  if(currentUser.tier === 'premium' || currentUser.tier === 'admin'){
+    localStorage.setItem('vk_isPremium', 'true');
+  }
+  updateFreemiumUI();
+  checkConsent();
+  loadInvestigations();
+}
+
+/* ─── API Helper ─── */
+async function api(method,path,body,auth){
+  const opts={method,headers:{'Content-Type':'application/json'}};
+  if(auth) opts.headers['Authorization']=getAuthHeader();
+  if(body) opts.body=JSON.stringify(body);
+  const res=await fetch('/api/v1'+path,opts);
+  if(res.status===401){
+    authToken=null;sessionStorage.removeItem('jwt_token');
+    document.getElementById('authOverlay').classList.remove('hidden');
+    throw new Error('Session expired — please log in again');
+  }
+  if(!res.ok){
+    let errMsg='HTTP '+res.status;
+    try{const j=await res.json();errMsg=j.detail||JSON.stringify(j)}catch(e){}
+    throw new Error(errMsg);
+  }
+  if(res.status===204) return null;
+  return res.json();
+}
+
+/* ─── Create Project ─── */
+async function createProject(){
+  const name=document.getElementById('projName').value.trim();
+  const desc=document.getElementById('projDesc').value.trim();
+  if(!name){log('ERROR: Investigation name is required','error');return}
+  const btn=document.getElementById('btnCreateProject');
+  btn.disabled=true;
+  log('INIT: Creating investigation "'+name+'"...','system');
+  try{
+    const data=await api('POST','/projects',{name,description:desc,target_summary:desc});
+    projectId=data.id;
+    log('PROJECT CREATED: '+projectId,'info');
+    document.getElementById('projectIdDisplay').textContent='Project ID: '+projectId;
+    document.getElementById('projectIdDisplay').classList.remove('hidden');
+    document.getElementById('btnAddEntity').disabled=false;
+    document.getElementById('btnRun').disabled=false;
+    document.getElementById('btnRun').removeAttribute('title');
+    document.getElementById('statsRow').classList.remove('hidden');
+    btn.innerHTML='<i class="fa-solid fa-check"></i> Project Active';
+  }catch(e){
+    log('ERROR: '+e.message,'error');
+    recordError();
+    btn.disabled=false;
+  }
+}
+
+/* ─── Add Entity ─── */
+async function addEntity(){
+  if(!projectId){log('ERROR: Create a project first','error');return}
+  const etype=document.getElementById('entityType').value;
+  const val=document.getElementById('entityValue').value.trim();
+  const label=document.getElementById('entityLabel').value.trim();
+  if(!val){log('ERROR: Target value is required','error');return}
+  log('TARGET: Adding '+etype+' = '+val,'system');
+  try{
+    const body={entity_type:etype,value:val};
+    if(label) body.label=label;
+    const data=await api('POST','/projects/'+projectId+'/entities',body);
+    entities.push(data);
+    renderEntityList();
+    updateStats();
+    document.getElementById('entityValue').value='';
+    document.getElementById('entityLabel').value='';
+    log('TARGET ACQUIRED: '+etype+' / '+val+' ['+data.id.slice(0,8)+']','info');
+  }catch(e){
+    log('ERROR: '+e.message,'error');
+    recordError();
+  }
+}
+
+function renderEntityList(){
+  const ul=document.getElementById('entityList');
+  ul.innerHTML='';
+  entities.forEach((ent,i)=>{
+    const li=document.createElement('li');
+    li.className='entity-item';
+    li.innerHTML='<span><span class="etype">'+ent.entity_type+'</span><span class="eval">'+esc(ent.value)+'</span></span>'
+      +'<span class="entity-status '+(ent.status||'pending')+'">'+(ent.status||'pending')+'</span>';
+    ul.appendChild(li);
+  });
+}
+
+/* ─── Execute OSINT Run ─── */
+async function executeRun(){
+  if(!projectId){log('ERROR: No active project','error');return}
+  if(entities.length===0){log('ERROR: Add at least one target first','error');return}
+
+  // Freemium gate
+  if(!canRun()){
+    log('LIMIT: Daily free run limit reached. Upgrade to Premium.','warn');
+    showPaywall();
+    return;
+  }
+
+  const btn=document.getElementById('btnRun');
+  btn.disabled=true;
+  document.getElementById('runStatus').classList.add('active');
+  log('EXECUTE: Starting OSINT collection run...','warn');
+
+  // Record aggregate stats
+  const entityTypes = entities.map(e => e.entity_type);
+  recordRun(entityTypes);
+  incrementRunCount();
+
+  try{
+    const data=await api('POST','/projects/'+projectId+'/run',null,true);
+    log('RUN COMPLETE: Processed '+data.entities_processed+' entities, '+data.findings_created+' findings created','info');
+    document.getElementById('runStatus').classList.remove('active');
+    await refreshProject();
+    await loadFindings();
+    btn.disabled=false;
+    document.getElementById('btnAnalyze').disabled=false;
+  }catch(e){
+    log('RUN ERROR: '+e.message,'error');
+    recordError();
+    document.getElementById('runStatus').classList.remove('active');
+    btn.disabled=false;
+  }
+}
+
+/* ─── Refresh project data ─── */
+async function refreshProject(){
+  if(!projectId) return;
+  try{
+    const data=await api('GET','/projects/'+projectId);
+    const entData=await api('GET','/projects/'+projectId+'/entities');
+    entities=entData;
+    renderEntityList();
+    updateStats(data);
+  }catch(e){
+    log('REFRESH ERROR: '+e.message,'error');
+  }
+}
+
+function updateStats(projectData){
+  document.getElementById('statEntities').textContent=entities.length;
+  if(projectData){
+    document.getElementById('statFindings').textContent=projectData.pattern_count!==undefined?'--':0;
+  }
+}
+
+/* ─── Load Findings ─── */
+async function loadFindings(){
+  if(!projectId) return;
+  log('FETCH: Loading intelligence findings...','system');
+  try{
+    const report=await api('GET','/projects/'+projectId+'/report');
+    const allFindings=[];
+    let maxSev='info';
+    const sevOrder={error:0,info:1,low:2,medium:3,high:4,critical:5};
+
+    (report.entities||[]).forEach(ent=>{
+      (ent.findings||[]).forEach(f=>{
+        f._entity_type=ent.entity_type;
+        f._entity_value=ent.value;
+        allFindings.push(f);
+        if((sevOrder[f.severity]||0)>(sevOrder[maxSev]||0)) maxSev=f.severity;
+      });
+    });
+
+    document.getElementById('statFindings').textContent=report.summary?report.summary.total_findings:allFindings.length;
+    document.getElementById('statPatterns').textContent=report.summary?report.summary.total_patterns:0;
+    document.getElementById('statSeverity').textContent=maxSev.toUpperCase();
+
+    if(allFindings.length>0){
+      document.getElementById('panelFindings').classList.remove('hidden');
+      renderFindings(allFindings);
+      log('FINDINGS: '+allFindings.length+' intelligence items loaded','info');
+      computeThreat(allFindings);
+    }else{
+      log('FINDINGS: No findings returned','warn');
+      computeThreat([]);
+    }
+  }catch(e){
+    log('FINDINGS ERROR: '+e.message,'error');
+  }
+}
+
+function renderFindings(findings){
+  const grid=document.getElementById('findingsGrid');
+  grid.innerHTML='';
+  findings.forEach(f=>{
+    const card=document.createElement('div');
+    card.className='finding-card sev-'+(f.severity||'info');
+
+    let html='<div class="finding-tool"><i class="fa-solid fa-wrench"></i> '+esc(f.tool_name||'Unknown Tool')+'</div>';
+    html+='<div class="finding-severity">'+(f.severity||'info')+'</div>';
+    html+='<div class="finding-summary">'+esc(f.summary||'No summary available')+'</div>';
+    html+='<div class="finding-entity"><i class="fa-solid fa-crosshairs"></i> '+esc(f._entity_type)+' : '+esc(f._entity_value)+'</div>';
+
+    if(f.tags&&f.tags.length){
+      html+='<div class="finding-meta">';
+      f.tags.forEach(t=>{html+='<span class="tag">'+esc(t)+'</span>'});
+      html+='</div>';
+    }
+
+    const raw=f.raw_data||{};
+    let actions='';
+
+    if(raw.google_maps_url){
+      actions+='<a class="btn btn-amber" href="'+esc(raw.google_maps_url)+'" target="_blank" rel="noopener"><i class="fa-solid fa-map-pin"></i> View Location</a>';
+    }
+    if(raw.gps_decimal){
+      const coords=raw.gps_decimal;
+      const mapsUrl='https://www.google.com/maps?q='+encodeURIComponent(coords);
+      actions+='<a class="btn btn-amber" href="'+esc(mapsUrl)+'" target="_blank" rel="noopener"><i class="fa-solid fa-map-pin"></i> View Location</a>';
+    }
+
+    if(raw.found_on&&raw.found_on.length){
+      html+='<div class="platforms-list"><strong>Found on:</strong><br>';
+      raw.found_on.forEach(p=>{html+='<span>'+esc(p)+'</span>'});
+      html+='</div>';
+    }
+    if(raw.platforms_found&&raw.platforms_found.length){
+      html+='<div class="platforms-list"><strong>Platforms:</strong><br>';
+      raw.platforms_found.forEach(p=>{html+='<span>'+esc(typeof p==='string'?p:p.name||p.url||JSON.stringify(p))+'</span>'});
+      html+='</div>';
+    }
+
+    if(raw.breach_names&&raw.breach_names.length){
+      html+='<div class="platforms-list"><strong>Breaches:</strong><br>';
+      raw.breach_names.forEach(b=>{html+='<span>'+esc(b)+'</span>'});
+      html+='</div>';
+    }
+
+    if(actions){
+      html+='<div class="finding-actions">'+actions+'</div>';
+    }
+
+    // NumVerify enhanced rendering
+    if(/numverify/i.test(f.tool_name)){
+      const sum=f.summary||'';
+      if(raw.skipped||/skip|no.*key|not.*configured/i.test(sum)){
+        html=html.replace(
+          'class="finding-summary">'+esc(sum),
+          'class="finding-summary"><i class="fa-solid fa-circle-info"></i> NumVerify: Skipped (no API key configured). Set NUMVERIFY_API_KEY for carrier lookup, validity, and location data.'
+        );
+      }else if(raw.valid!==undefined){
+        let nv='<div style="margin-top:.6rem;padding:.6rem;background:rgba(6,182,212,.06);border:1px solid rgba(6,182,212,.15);border-radius:4px;font-size:.85rem;line-height:1.8">';
+        nv+='<div style="font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--cyan);margin-bottom:.3rem"><i class="fa-solid fa-phone"></i> NumVerify Full Lookup</div>';
+        nv+='<div><strong>Valid:</strong> '+(raw.valid?'<span style="color:var(--green)">Yes</span>':'<span style="color:var(--red)">No</span>')+'</div>';
+        if(raw.international_format) nv+='<div><strong>International:</strong> '+esc(raw.international_format)+'</div>';
+        if(raw.local_format) nv+='<div><strong>Local:</strong> '+esc(raw.local_format)+'</div>';
+        if(raw.carrier) nv+='<div><strong>Carrier:</strong> '+esc(raw.carrier)+'</div>';
+        if(raw.line_type) nv+='<div><strong>Line Type:</strong> '+esc(raw.line_type)+'</div>';
+        if(raw.location) nv+='<div><strong>Location:</strong> '+esc(raw.location)+'</div>';
+        if(raw.country_name) nv+='<div><strong>Country:</strong> '+esc(raw.country_name)+(raw.country_code?' ('+esc(raw.country_code)+')':'')+'</div>';
+        nv+='</div>';
+        html+=nv;
+      }
+    }
+
+    card.innerHTML=html;
+    grid.appendChild(card);
+  });
+}
+
+/* ─── AI Analysis ─── */
+async function runAnalysis(){
+  if(!projectId){log('ERROR: No active project','error');return}
+
+  // Freemium gate for AI analysis too
+  if(!isPremium() && !canRun()){
+    log('LIMIT: Daily free limit reached. Upgrade for unlimited AI analysis.','warn');
+    showPaywall();
+    return;
+  }
+
+  const btn=document.getElementById('btnAnalyze');
+  btn.disabled=true;
+  document.getElementById('analyzeStatus').classList.add('active');
+  log('ANALYSIS: Initiating AI pattern analysis...','warn');
+  recordAnalysis();
+
+  try{
+    const data=await api('POST','/projects/'+projectId+'/analyze',null,true);
+    log('ANALYSIS COMPLETE: '+data.patterns_created+' patterns identified','info');
+    document.getElementById('analyzeStatus').classList.remove('active');
+    await loadPatterns();
+    btn.disabled=false;
+  }catch(e){
+    log('ANALYSIS ERROR: '+e.message,'error');
+    recordError();
+    document.getElementById('analyzeStatus').classList.remove('active');
+    btn.disabled=false;
+  }
+}
+
+async function loadPatterns(){
+  if(!projectId) return;
+  try{
+    const patterns=await api('GET','/projects/'+projectId+'/patterns');
+    document.getElementById('statPatterns').textContent=patterns.length;
+    if(patterns.length>0){
+      document.getElementById('panelPatterns').classList.remove('hidden');
+      renderPatterns(patterns);
+    }
+  }catch(e){
+    log('PATTERN LOAD ERROR: '+e.message,'error');
+  }
+}
+
+function renderPatterns(patterns){
+  const container=document.getElementById('patternsContainer');
+  container.innerHTML='';
+  const typeOrder=['summary','relationship','anomaly','lead'];
+  patterns.sort((a,b)=>(typeOrder.indexOf(a.pattern_type)||0)-(typeOrder.indexOf(b.pattern_type)||0));
+  patterns.forEach(p=>{
+    const card=document.createElement('div');
+    card.className='pattern-card type-'+(p.pattern_type||'summary');
+    const iconMap={summary:'fa-file-lines',relationship:'fa-link',anomaly:'fa-triangle-exclamation',lead:'fa-lightbulb'};
+    const icon=iconMap[p.pattern_type]||'fa-circle-info';
+    card.innerHTML='<div class="pattern-type"><i class="fa-solid '+icon+'"></i> '+esc(p.pattern_type||'insight')+'</div>'
+      +'<div class="pattern-desc">'+esc(p.description||'No description')+'</div>'
+      +'<div class="pattern-conf">Confidence: '+(p.confidence!==undefined?Math.round(p.confidence*100)+'%':'N/A')
+      +(p.llm_model?' &middot; Model: '+esc(p.llm_model):'')+'</div>';
+    container.appendChild(card);
+  });
+}
+
+/* ─── Utilities ─── */
+function esc(s){
+  if(!s) return '';
+  const d=document.createElement('div');
+  d.textContent=String(s);
+  return d.innerHTML;
+}
+
+/* ─── Load Existing Investigations on Page Load ─── */
+async function loadInvestigations(){
+  try{
+    const projects=await api('GET','/projects');
+    if(!projects||projects.length===0){
+      document.getElementById('panelInvestigations').classList.add('hidden');
+      return;
+    }
+    document.getElementById('panelInvestigations').classList.remove('hidden');
+
+    let totalEntities=0,totalFindings=0,totalPatterns=0;
+    const details=[];
+    for(const p of projects){
+      try{
+        const report=await api('GET','/projects/'+p.id+'/report');
+        const ec=report.summary?report.summary.total_entities:0;
+        const fc=report.summary?report.summary.total_findings:0;
+        const pc=report.summary?report.summary.total_patterns:0;
+        totalEntities+=ec;totalFindings+=fc;totalPatterns+=pc;
+        details.push({id:p.id,name:p.name,status:p.status,entities:ec,findings:fc,patterns:pc});
+      }catch(e){
+        details.push({id:p.id,name:p.name,status:p.status,entities:0,findings:0,patterns:0});
+      }
+    }
+
+    const body=document.getElementById('investigationsBody');
+    let html='<table class="inv-table"><thead><tr><th>Project</th><th>Status</th><th>Entities</th><th>Findings</th></tr></thead><tbody>';
+    details.forEach(d=>{
+      const isDemo=/demo|dude/i.test(d.name);
+      const sel=d.id===projectId?' selected':'';
+      const demo=isDemo?' demo-highlight':'';
+      html+='<tr class="'+sel+demo+'" onclick="selectProject(\''+d.id+'\',\''+esc(d.name)+'\')">';
+      html+='<td>'+esc(d.name)+'</td><td>'+esc(d.status)+'</td><td>'+d.entities+'</td><td>'+d.findings+'</td></tr>';
+    });
+    html+='</tbody></table>';
+    body.innerHTML=html;
+
+    document.getElementById('statEntities').textContent=totalEntities;
+    document.getElementById('statFindings').textContent=totalFindings;
+    document.getElementById('statPatterns').textContent=totalPatterns;
+    document.getElementById('statsRow').classList.remove('hidden');
+
+    log('LOADED: '+projects.length+' investigation(s) from server','info');
+    document.getElementById('dossierProjects').textContent=projects.length;
+
+    if(!projectId||!details.find(d=>d.id===projectId)){
+      const autoSelect=details.find(d=>/demo|dude/i.test(d.name))||details[0];
+      if(autoSelect){
+        selectProject(autoSelect.id,autoSelect.name);
+        log('AUTO-SELECT: '+autoSelect.name,'system');
+      }
+    }else if(projectId){
+      loadFindings();
+      loadPatterns();
+    }
+  }catch(e){
+    log('LOAD ERROR: '+e.message,'error');
+  }
+}
+
+function selectProject(id,name){
+  projectId=id;
+  sessionStorage.setItem('projectId',id);
+  document.getElementById('btnAddEntity').disabled=false;
+  document.getElementById('btnRun').disabled=false;
+  document.getElementById('btnRun').removeAttribute('title');
+  document.getElementById('btnAnalyze').disabled=false;
+  document.getElementById('btnAnalyze').removeAttribute('title');
+  document.getElementById('projectIdDisplay').textContent='Project ID: '+id;
+  document.getElementById('projectIdDisplay').classList.remove('hidden');
+  document.getElementById('btnCreateProject').innerHTML='<i class="fa-solid fa-check"></i> Project Active';
+  document.getElementById('btnCreateProject').disabled=true;
+  log('SELECTED: '+name+' ['+id.slice(0,8)+']','system');
+
+  document.querySelectorAll('.inv-table tr').forEach(r=>r.classList.remove('selected'));
+  if(event && event.currentTarget) event.currentTarget.classList.add('selected');
+
+  api('GET','/projects/'+id+'/entities').then(ents=>{
+    entities=ents||[];
+    renderEntityList();
+  }).catch(()=>{});
+
+  loadFindings();
+  loadPatterns();
+}
+
+/* ─── Init ─── */
+log('VALKYRIE OSINT Intelligence Platform v2.0','system');
+log('System initialized. Checking authentication...','info');
+updateFreemiumUI();
+
+const savedProjectId=sessionStorage.getItem('projectId');
+if(savedProjectId) projectId=savedProjectId;
+
+(async function init(){
+  if(authToken){
+    await onAuthSuccess();
+  }else{
+    document.getElementById('authOverlay').classList.remove('hidden');
+    log('AUTH: Awaiting login credentials','warn');
+  }
+})();
+</script>
+</body>
+</html>

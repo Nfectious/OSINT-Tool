@@ -18,6 +18,13 @@ class Settings(BaseSettings):
     # PhoneInfoga
     PHONEINFOGA_URL: str = "http://phoneinfoga:8080"
 
+    # Auth
+    ADMIN_USERNAME: str = "valkyrie"
+    ADMIN_PASSWORD: str = "madison0231"
+    JWT_SECRET: str = "change-me-in-production"
+    JWT_ALGORITHM: str = "HS256"
+    JWT_EXPIRE_HOURS: int = 24
+
     # App
     DEBUG: bool = False
     API_PORT: int = 8400

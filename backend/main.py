@@ -2,8 +2,12 @@ import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 
 from database import create_all_tables
+from rate_limit import limiter
+from routers.auth import router as auth_router
 from routers.projects import router as projects_router
 from routers.entities import router as entities_router
 from routers.findings import router as findings_router
@@ -32,6 +36,9 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -41,6 +48,7 @@ app.add_middleware(
 )
 
 # Mount routers under /api/v1
+app.include_router(auth_router, prefix="/api/v1")
 app.include_router(projects_router, prefix="/api/v1")
 app.include_router(entities_router, prefix="/api/v1")
 app.include_router(findings_router, prefix="/api/v1")

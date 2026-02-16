@@ -13,3 +13,7 @@ phonenumbers==8.13.39
 dnspython==2.6.1
 pyexiftool==0.5.6
 aiohttp==3.9.5
+slowapi==0.1.9
+passlib[bcrypt]==1.7.4
+bcrypt==4.2.1
+python-jose[cryptography]==3.3.0

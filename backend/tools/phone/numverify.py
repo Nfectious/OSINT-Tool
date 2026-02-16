@@ -50,21 +50,39 @@ class NumVerifyTool(BaseTool):
                 tags=["error", "phone", "numverify"],
             )
 
+        # Check for API-level errors (e.g. invalid key, quota exceeded)
+        if "error" in data:
+            err_info = data["error"]
+            err_msg = err_info.get("info", str(err_info)) if isinstance(err_info, dict) else str(err_info)
+            return self._make_finding(
+                raw_data=data,
+                summary=f"NumVerify API error: {err_msg}",
+                severity="error",
+                tags=["error", "phone", "numverify"],
+            )
+
         valid = data.get("valid", False)
         country_code = data.get("country_code", "")
         country_name = data.get("country_name", "Unknown")
-        carrier = data.get("carrier", "Unknown")
-        line_type = data.get("line_type", "Unknown")
-        location = data.get("location", "Unknown")
+        carrier = data.get("carrier", "") or "Unknown"
+        line_type = data.get("line_type", "") or "Unknown"
+        location = data.get("location", "") or "Unknown"
+        intl_format = data.get("international_format", entity_value)
+        local_format = data.get("local_format", "")
 
         raw_data = data
 
-        summary = f"{carrier} {line_type} number in {country_name}"
+        summary = (
+            f"Valid: {'Yes' if valid else 'No'} | "
+            f"Carrier: {carrier} | "
+            f"Line Type: {line_type} | "
+            f"Location: {location}, {country_name}"
+        )
         severity = "low" if valid else "info"
 
         return self._make_finding(
             raw_data=raw_data,
             summary=summary,
             severity=severity,
-            tags=["phone", "numverify", "validation"],
+            tags=["phone", "numverify", "validation", "carrier-lookup"],
         )
