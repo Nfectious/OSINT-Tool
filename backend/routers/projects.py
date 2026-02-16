@@ -10,6 +10,7 @@ from auth import get_current_user_id
 from models.project import Project
 from models.entity import Entity
 from models.pattern import Pattern
+from services.anon_stats import record_run, record_analysis, record_error
 
 router = APIRouter(prefix="/projects", tags=["projects"])
 
@@ -123,9 +124,17 @@ def run_project(project_id: str, request: Request, db: Session = Depends(get_db)
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
 
+    entities = db.query(Entity).filter(Entity.project_id == project_id).all()
+    entity_types = [e.entity_type for e in entities]
+
     from services.osint_runner import OSINTRunner
     runner = OSINTRunner(db)
-    result = runner.run_project(project_id)
+    try:
+        result = runner.run_project(project_id)
+    except Exception as exc:
+        record_error()
+        raise exc
+    record_run(entity_types)
     return RunResponse(
         project_id=project_id,
         entities_processed=result["entities_processed"],
@@ -143,7 +152,12 @@ def analyze_project(project_id: str, request: Request, db: Session = Depends(get
 
     from services.llm_analyzer import LLMAnalyzer
     analyzer = LLMAnalyzer(db)
-    result = analyzer.analyze_project(project_id)
+    try:
+        result = analyzer.analyze_project(project_id)
+    except Exception as exc:
+        record_error()
+        raise exc
+    record_analysis()
     return AnalysisResponse(
         project_id=project_id,
         patterns_created=result["patterns_created"],

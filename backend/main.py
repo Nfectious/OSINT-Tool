@@ -12,6 +12,7 @@ from routers.projects import router as projects_router
 from routers.entities import router as entities_router
 from routers.findings import router as findings_router
 from routers.analysis import router as analysis_router
+from routers.stats import router as stats_router
 
 logging.basicConfig(
     level=logging.INFO,
@@ -53,6 +54,7 @@ app.include_router(projects_router, prefix="/api/v1")
 app.include_router(entities_router, prefix="/api/v1")
 app.include_router(findings_router, prefix="/api/v1")
 app.include_router(analysis_router, prefix="/api/v1")
+app.include_router(stats_router, prefix="/api/v1")
 
 
 @app.get("/health")

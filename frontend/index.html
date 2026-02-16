@@ -730,6 +730,17 @@ body::after{
 
   </div><!-- /grid -->
 
+  <!-- PLATFORM STATS (from backend aggregate) -->
+  <div class="panel mt-2" id="panelPlatformStats" style="margin-bottom:1rem">
+    <div class="panel-head">
+      <span class="dot" style="background:var(--cyan)"></span>
+      <span class="label"><i class="fa-solid fa-chart-bar"></i> Platform Usage (Anonymous Aggregate)</span>
+    </div>
+    <div class="panel-body" id="platformStatsBody" style="font-size:.85rem;color:var(--text-dim);text-align:center">
+      Loading aggregate stats...
+    </div>
+  </div>
+
   <!-- FOOTER -->
   <footer class="site-footer">
     VALKYRIE OSINT v2.0 | Built by Travis (@L7Dare)<br>
@@ -1189,6 +1200,7 @@ async function executeRun(){
     document.getElementById('runStatus').classList.remove('active');
     await refreshProject();
     await loadFindings();
+    loadPlatformStats();
     btn.disabled=false;
     document.getElementById('btnAnalyze').disabled=false;
   }catch(e){
@@ -1358,6 +1370,7 @@ async function runAnalysis(){
     log('ANALYSIS COMPLETE: '+data.patterns_created+' patterns identified','info');
     document.getElementById('analyzeStatus').classList.remove('active');
     await loadPatterns();
+    loadPlatformStats();
     btn.disabled=false;
   }catch(e){
     log('ANALYSIS ERROR: '+e.message,'error');
@@ -1492,6 +1505,41 @@ function selectProject(id,name){
   loadFindings();
   loadPatterns();
 }
+
+/* ─── Platform Aggregate Stats (from backend) ─── */
+async function loadPlatformStats(){
+  try{
+    const res=await fetch('/api/v1/stats/aggregate');
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const s=await res.json();
+    const el=document.getElementById('platformStatsBody');
+    if(!s.total_runs && !s.total_analyses){
+      el.textContent='No usage data yet. Run an OSINT operation to begin.';
+      return;
+    }
+    let html='<div style="display:flex;gap:1.5rem;justify-content:center;flex-wrap:wrap">';
+    html+='<div><span style="color:var(--green);font-size:1.25rem;font-weight:bold">'+s.total_runs+'</span><br><span style="font-size:.7rem;letter-spacing:.1em">TOTAL RUNS</span></div>';
+    html+='<div><span style="color:var(--cyan);font-size:1.25rem;font-weight:bold">'+s.total_analyses+'</span><br><span style="font-size:.7rem;letter-spacing:.1em">AI ANALYSES</span></div>';
+    html+='<div><span style="color:'+(s.error_rate_pct>10?'var(--red)':'var(--amber)')+';font-size:1.25rem;font-weight:bold">'+s.error_rate_pct+'%</span><br><span style="font-size:.7rem;letter-spacing:.1em">ERROR RATE</span></div>';
+    html+='</div>';
+    // Target type breakdown
+    if(s.target_type_pct && Object.keys(s.target_type_pct).length>0){
+      html+='<div style="margin-top:.75rem;font-size:.75rem;color:var(--text-dim)">';
+      html+='<span style="letter-spacing:.1em">TARGET MIX:</span> ';
+      const entries=Object.entries(s.target_type_pct).sort((a,b)=>b[1]-a[1]);
+      entries.forEach(([t,pct],i)=>{
+        html+='<span style="color:var(--text);margin:0 .3rem">'+t.toUpperCase()+' '+pct+'%</span>';
+        if(i<entries.length-1) html+='<span style="color:var(--border-light)">&middot;</span>';
+      });
+      html+='</div>';
+    }
+    el.innerHTML=html;
+  }catch(e){
+    document.getElementById('platformStatsBody').textContent='Stats unavailable';
+  }
+}
+// Load stats on page load (no auth needed)
+loadPlatformStats();
 
 /* ─── Init ─── */
 log('VALKYRIE OSINT Intelligence Platform v2.0','system');
