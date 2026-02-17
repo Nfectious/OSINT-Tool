@@ -28,6 +28,7 @@ body{
     linear-gradient(rgba(0,255,0,.02) 1px,transparent 1px),
     linear-gradient(90deg,rgba(0,255,0,.02) 1px,transparent 1px);
   background-size:40px 40px;
+  font-size:16px;
 }
 /* Scanline overlay */
 body::after{
@@ -106,28 +107,28 @@ body::after{
 .btn-red{
   background:linear-gradient(180deg,#b91c1c,#7f1d1d);
   border-color:#b91c1c;color:#fff;
-  box-shadow:0 0 6px rgba(255,0,0,.2);
+  box-shadow:0 0 10px rgba(255,0,0,.3);
 }
 .btn-red:hover:not(:disabled){box-shadow:0 0 20px rgba(255,0,0,.5);background:#dc2626;transform:scale(1.04)}
 .btn-red:active:not(:disabled){transform:scale(.97)}
 .btn-amber{
   background:linear-gradient(180deg,var(--amber-dim),#78350f);
   border-color:var(--amber-dim);color:var(--amber);
-  box-shadow:0 0 6px rgba(245,158,11,.15);
+  box-shadow:0 0 10px rgba(245,158,11,.2);
 }
 .btn-amber:hover:not(:disabled){box-shadow:0 0 20px rgba(245,158,11,.4);transform:scale(1.04)}
 .btn-amber:active:not(:disabled){transform:scale(.97)}
 .btn-cyan{
   background:linear-gradient(180deg,var(--cyan-dim),#164e63);
   border-color:var(--cyan-dim);color:var(--cyan);
-  box-shadow:0 0 6px rgba(6,182,212,.15);
+  box-shadow:0 0 10px rgba(6,182,212,.2);
 }
 .btn-cyan:hover:not(:disabled){box-shadow:0 0 20px rgba(6,182,212,.4);transform:scale(1.04)}
 .btn-cyan:active:not(:disabled){transform:scale(.97)}
 .btn-green{
   background:linear-gradient(180deg,#166534,#14532d);
   border-color:#16a34a;color:var(--green);
-  box-shadow:0 0 6px rgba(0,255,0,.15);
+  box-shadow:0 0 10px rgba(0,255,0,.2);
 }
 .btn-green:hover:not(:disabled){box-shadow:0 0 20px rgba(0,255,0,.4);transform:scale(1.04)}
 .btn-green:active:not(:disabled){transform:scale(.97)}
@@ -277,14 +278,65 @@ body::after{
 .welcome-banner strong{color:#00ff9d}
 .welcome-banner .wb-sub{color:var(--text-dim);font-size:.85rem;margin-top:.3rem}
 
-/* Privacy disclaimer */
-.privacy-banner{
-  background:rgba(0,255,0,.05);padding:.75rem 1rem;margin-bottom:1rem;border-radius:var(--radius);
-  border:1px solid rgba(0,255,0,.2);text-align:center;font-size:.8rem;line-height:1.5;
-  color:var(--text-dim);
+/* ─── ETHICAL USE DISCLAIMER ─── */
+.ethical-disclaimer{
+  background:#300000;
+  border:2px solid #660000;
+  border-radius:var(--radius);
+  padding:1.25rem 1.5rem;
+  margin-bottom:1.25rem;
+  text-align:center;
+  line-height:1.7;
 }
-.privacy-banner i{color:var(--green);margin-right:.4rem}
-.privacy-banner strong{color:var(--green)}
+.ethical-disclaimer .ed-title{
+  font-size:1rem;font-weight:bold;letter-spacing:.2em;color:#ff4444;
+  text-transform:uppercase;margin-bottom:.5rem;
+  text-shadow:0 0 10px rgba(255,0,0,.3);
+}
+.ethical-disclaimer .ed-body{
+  font-size:.875rem;font-weight:bold;color:#fff;line-height:1.7;
+}
+.ethical-disclaimer .ed-ack{
+  margin-top:.75rem;display:flex;align-items:center;justify-content:center;gap:.6rem;
+  font-size:.85rem;color:#ccc;cursor:pointer;
+}
+.ethical-disclaimer .ed-ack input[type="checkbox"]{
+  accent-color:var(--green);width:18px;height:18px;flex-shrink:0;cursor:pointer;
+}
+.ethical-disclaimer.acknowledged{
+  border-color:#442222;background:#200000;
+}
+.ethical-disclaimer.acknowledged .ed-ack{display:none}
+.ethical-disclaimer.acknowledged .ed-body{
+  font-size:.8rem;color:#ccc;font-weight:normal;
+}
+
+/* ─── Why Premium collapsible ─── */
+.why-premium{
+  background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);
+  margin-bottom:1.25rem;overflow:hidden;
+}
+.why-premium-toggle{
+  width:100%;display:flex;align-items:center;justify-content:space-between;
+  padding:.85rem 1.25rem;background:rgba(245,158,11,.06);
+  border:none;cursor:pointer;font-family:var(--mono);
+  font-size:.9rem;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--amber);
+}
+.why-premium-toggle:hover{background:rgba(245,158,11,.1)}
+.why-premium-toggle .chevron{transition:transform .2s;font-size:.75rem}
+.why-premium.open .why-premium-toggle .chevron{transform:rotate(180deg)}
+.why-premium-body{
+  max-height:0;overflow:hidden;transition:max-height .3s ease;
+}
+.why-premium.open .why-premium-body{max-height:500px}
+.why-premium-inner{padding:1.25rem}
+.why-premium-inner ul{list-style:none;margin-bottom:1.25rem}
+.why-premium-inner ul li{
+  padding:.45rem 0;font-size:.9rem;color:var(--text);
+  display:flex;align-items:flex-start;gap:.6rem;
+}
+.why-premium-inner ul li .check{color:var(--green);font-size:.85rem;margin-top:.1rem;flex-shrink:0}
 
 /* Freemium bar */
 .freemium-bar{
@@ -329,6 +381,36 @@ body::after{
   font-size:.8rem;
 }
 .paywall-close:hover{color:var(--text);border-color:var(--text-dim)}
+
+/* AI Teaser overlay */
+.ai-teaser-overlay{
+  position:fixed;top:0;left:0;right:0;bottom:0;z-index:510;
+  background:rgba(0,0,0,.88);display:flex;align-items:center;justify-content:center;
+}
+.ai-teaser-overlay.hidden{display:none}
+.ai-teaser-box{
+  width:520px;max-width:94vw;background:var(--panel);border:1px solid var(--cyan);
+  border-radius:var(--radius);padding:2rem;
+  box-shadow:0 0 40px rgba(6,182,212,.2);
+}
+.ai-teaser-box h2{
+  color:var(--cyan);font-size:1.1rem;letter-spacing:.12em;margin-bottom:1rem;text-align:center;
+}
+.ai-teaser-box .teaser-basic{
+  background:rgba(6,182,212,.06);border:1px solid rgba(6,182,212,.2);
+  border-radius:var(--radius);padding:1rem;margin-bottom:1.25rem;
+  font-size:.85rem;line-height:1.6;color:var(--text);
+}
+.ai-teaser-box .teaser-basic .teaser-label{
+  font-size:.7rem;letter-spacing:.15em;text-transform:uppercase;color:var(--cyan);
+  margin-bottom:.4rem;
+}
+.ai-teaser-box .teaser-upsell{
+  background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.2);
+  border-radius:var(--radius);padding:1rem;margin-bottom:1.25rem;
+  font-size:.85rem;line-height:1.7;color:var(--amber);text-align:center;
+}
+.ai-teaser-box .teaser-actions{display:flex;gap:.75rem;justify-content:center;flex-wrap:wrap}
 
 /* Consent overlay */
 .consent-overlay{
@@ -441,6 +523,9 @@ body::after{
 .dossier p{margin:.3rem 0;color:var(--text)}
 .dossier strong{color:var(--text-dim)}
 
+/* ─── Disabled state for gated buttons ─── */
+.btn.gated{opacity:.35;pointer-events:none;filter:grayscale(.5)}
+
 /* ─── Responsive: Tablet ─── */
 @media(max-width:900px){
   .grid{grid-template-columns:1fr}
@@ -469,6 +554,10 @@ body::after{
   .stat-box .val{font-size:1.25rem}
   #panelRun .panel-body{display:flex;flex-direction:column;gap:.75rem;align-items:stretch}
   #panelRun .btn-lg{margin-left:0!important}
+  .ethical-disclaimer{padding:1rem}
+  .ethical-disclaimer .ed-body{font-size:.8rem}
+  .ai-teaser-box{padding:1.25rem}
+  .why-premium-inner{padding:1rem}
 }
 </style>
 </head>
@@ -552,6 +641,28 @@ body::after{
   </div>
 </div>
 
+<!-- AI TEASER OVERLAY (free users after analysis) -->
+<div class="ai-teaser-overlay hidden" id="aiTeaserOverlay">
+  <div class="ai-teaser-box">
+    <h2><i class="fa-solid fa-brain"></i> AI ANALYSIS RESULTS</h2>
+    <div class="teaser-basic">
+      <div class="teaser-label"><i class="fa-solid fa-file-lines"></i> Basic AI Summary (Free Tier)</div>
+      <div id="aiTeaserContent">Analysis processing...</div>
+    </div>
+    <div class="teaser-upsell">
+      <i class="fa-solid fa-lock" style="margin-right:.4rem"></i>
+      <strong>Upgrade to Premium</strong> for full AI-powered analysis: deep pattern detection, risk scoring, entity linking, threat recommendations, and downloadable detailed report.<br>
+      <span style="color:var(--text);font-size:.8rem">Unlock the real intelligence behind your targets.</span>
+    </div>
+    <div class="teaser-actions">
+      <button class="btn btn-amber" onclick="showPaywall();closeAiTeaser()">
+        <i class="fa-solid fa-bolt"></i> Upgrade Now
+      </button>
+      <button class="btn" onclick="closeAiTeaser()">Close</button>
+    </div>
+  </div>
+</div>
+
 <!-- HEADER -->
 <header class="header">
   <div class="header-inner">
@@ -586,10 +697,40 @@ body::after{
 
 <div class="container">
 
-  <!-- PRIVACY DISCLAIMER -->
-  <div class="privacy-banner">
-    <i class="fa-solid fa-lock"></i>
-    <strong>VALKYRIE stores no personal data.</strong> In-memory processing only. All results discarded after response. Aggregate usage stats (no PII) help improve the tool.
+  <!-- ETHICAL USE DISCLAIMER (non-dismissible until acknowledged) -->
+  <div class="ethical-disclaimer" id="ethicalDisclaimer">
+    <div class="ed-title"><i class="fa-solid fa-exclamation-triangle"></i> VALKYRIE OSINT &mdash; ETHICAL USE ONLY <i class="fa-solid fa-exclamation-triangle"></i></div>
+    <div class="ed-body">
+      All queries processed in-memory. No personal data (phones, emails, IPs, usernames) is stored, logged, or shared. Aggregate anonymous usage stats (no PII) help improve the tool &mdash; opt-out anytime in settings. You are solely responsible for legal and ethical compliance. Misuse may violate laws or platform terms.
+    </div>
+    <label class="ed-ack" id="ethicalAckLabel">
+      <input type="checkbox" id="ethicalAckCheck">
+      <span>I Understand &mdash; I will use this tool ethically and legally</span>
+    </label>
+  </div>
+
+  <!-- WHY PREMIUM? (collapsible) -->
+  <div class="why-premium" id="whyPremium">
+    <button class="why-premium-toggle" onclick="toggleWhyPremium()">
+      <span><i class="fa-solid fa-crown" style="margin-right:.5rem"></i> Why Go Premium?</span>
+      <span class="chevron"><i class="fa-solid fa-chevron-down"></i></span>
+    </button>
+    <div class="why-premium-body">
+      <div class="why-premium-inner">
+        <ul>
+          <li><span class="check"><i class="fa-solid fa-check"></i></span> Unlimited OSINT runs (no 5/day limit)</li>
+          <li><span class="check"><i class="fa-solid fa-check"></i></span> Full AI analysis depth &mdash; patterns, risks, connections, actionable insights</li>
+          <li><span class="check"><i class="fa-solid fa-check"></i></span> Detailed downloadable reports (PDF/JSON) for your records</li>
+          <li><span class="check"><i class="fa-solid fa-check"></i></span> Priority access to new tools and updates</li>
+          <li><span class="check"><i class="fa-solid fa-check"></i></span> Support ongoing development of VALKYRIE</li>
+        </ul>
+        <div class="text-center">
+          <button class="btn btn-amber btn-lg" onclick="showPaywall()">
+            <i class="fa-solid fa-bolt"></i> Upgrade Now &mdash; $9.99/mo
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- FREEMIUM BAR -->
@@ -644,7 +785,7 @@ body::after{
           <label>Target Description</label>
           <textarea id="projDesc" placeholder="Brief description of investigation targets and objectives..."></textarea>
         </div>
-        <button class="btn btn-green btn-block" id="btnCreateProject" onclick="createProject()">
+        <button class="btn btn-green btn-block gated-btn" id="btnCreateProject" onclick="createProject()">
           <i class="fa-solid fa-rocket"></i> Initialize Project
         </button>
         <div class="mt-1 text-center text-dim text-sm hidden" id="projectIdDisplay"></div>
@@ -679,7 +820,7 @@ body::after{
           <label>Label (optional)</label>
           <input type="text" id="entityLabel" placeholder="e.g. Suspect primary phone">
         </div>
-        <button class="btn btn-amber btn-block" id="btnAddEntity" onclick="addEntity()" disabled>
+        <button class="btn btn-amber btn-block gated-btn" id="btnAddEntity" onclick="addEntity()" disabled>
           <i class="fa-solid fa-bullseye"></i> Add Target
         </button>
         <ul class="entity-list" id="entityList"></ul>
@@ -693,10 +834,10 @@ body::after{
         <span class="label"><i class="fa-solid fa-satellite-dish"></i> Intelligence Operations</span>
       </div>
       <div class="panel-body text-center">
-        <button class="btn btn-red btn-lg" id="btnRun" onclick="executeRun()" disabled title="Select an investigation first">
+        <button class="btn btn-red btn-lg gated-btn" id="btnRun" onclick="executeRun()" disabled title="Select an investigation first">
           <i class="fa-solid fa-play"></i> Execute OSINT Run
         </button>
-        <button class="btn btn-cyan btn-lg" id="btnAnalyze" onclick="runAnalysis()" disabled title="Select an investigation first" style="margin-left:1rem">
+        <button class="btn btn-cyan btn-lg gated-btn" id="btnAnalyze" onclick="runAnalysis()" disabled title="Select an investigation first" style="margin-left:1rem">
           <i class="fa-solid fa-brain"></i> Run AI Analysis
         </button>
         <div class="run-status" id="runStatus">
@@ -767,6 +908,60 @@ body::after{
 let projectId = null;
 let entities = [];
 
+/* ─── Ethical Disclaimer Gate ─── */
+function isDisclaimerAcknowledged(){
+  return localStorage.getItem('vk_ethical_ack') === '1';
+}
+
+function initDisclaimerGate(){
+  const disclaimer = document.getElementById('ethicalDisclaimer');
+  const checkbox = document.getElementById('ethicalAckCheck');
+
+  if(isDisclaimerAcknowledged()){
+    disclaimer.classList.add('acknowledged');
+    enableGatedButtons();
+    return;
+  }
+
+  // Disable all gated buttons until acknowledged
+  disableGatedButtons();
+
+  checkbox.addEventListener('change', function(){
+    if(checkbox.checked){
+      localStorage.setItem('vk_ethical_ack', '1');
+      disclaimer.classList.add('acknowledged');
+      enableGatedButtons();
+      log('DISCLAIMER: Ethical use acknowledged', 'system');
+    }
+  });
+}
+
+function disableGatedButtons(){
+  document.querySelectorAll('.gated-btn').forEach(function(btn){
+    btn.classList.add('gated');
+  });
+}
+
+function enableGatedButtons(){
+  document.querySelectorAll('.gated-btn').forEach(function(btn){
+    btn.classList.remove('gated');
+  });
+}
+
+/* ─── Why Premium Toggle ─── */
+function toggleWhyPremium(){
+  document.getElementById('whyPremium').classList.toggle('open');
+}
+
+/* ─── AI Teaser Overlay ─── */
+function showAiTeaser(basicSummary){
+  document.getElementById('aiTeaserContent').textContent = basicSummary || 'Target entities analyzed. Basic pattern overview generated.';
+  document.getElementById('aiTeaserOverlay').classList.remove('hidden');
+}
+function closeAiTeaser(){
+  document.getElementById('aiTeaserOverlay').classList.add('hidden');
+}
+
 /* ─── Aggregate Stats (no PII) ─── */
 const aggStats = {
   total_runs: parseInt(localStorage.getItem('vk_agg_total_runs') || '0'),
@@ -832,6 +1027,7 @@ function updateFreemiumUI(){
   const prog = document.getElementById('runsProgress');
   const btnUp = document.getElementById('btnUpgradeSmall');
   const footerUp = document.getElementById('footerUpgrade');
+  const wpSection = document.getElementById('whyPremium');
 
   if(isPremium()){
     text.innerHTML = '<span class="premium-badge"><i class="fa-solid fa-crown"></i> PREMIUM ACTIVE</span>';
@@ -841,9 +1037,11 @@ function updateFreemiumUI(){
     bar.style.borderColor = 'rgba(0,255,0,.25)';
     bar.style.background = 'rgba(0,255,0,.05)';
     footerUp.innerHTML = '<span style="color:var(--green)"><i class="fa-solid fa-crown"></i> Premium Active &mdash; Unlimited Runs &amp; Full AI</span>';
+    wpSection.classList.add('hidden');
     return;
   }
 
+  wpSection.classList.remove('hidden');
   const used = getRunCount();
   const left = Math.max(0, FREE_DAILY_LIMIT - used);
   text.textContent = left + '/' + FREE_DAILY_LIMIT + ' free runs left today';
@@ -912,6 +1110,7 @@ document.addEventListener('DOMContentLoaded', function(){
   cb.addEventListener('change', function(){
     document.getElementById('btnConsent').disabled = !cb.checked;
   });
+  initDisclaimerGate();
 });
 
 /* ─── Mission Clock ─── */
@@ -1112,6 +1311,7 @@ async function api(method,path,body,auth){
 
 /* ─── Create Project ─── */
 async function createProject(){
+  if(!isDisclaimerAcknowledged()){log('ERROR: Acknowledge the ethical use disclaimer first','error');return}
   const name=document.getElementById('projName').value.trim();
   const desc=document.getElementById('projDesc').value.trim();
   if(!name){log('ERROR: Investigation name is required','error');return}
@@ -1138,6 +1338,7 @@ async function createProject(){
 
 /* ─── Add Entity ─── */
 async function addEntity(){
+  if(!isDisclaimerAcknowledged()){log('ERROR: Acknowledge the ethical use disclaimer first','error');return}
   if(!projectId){log('ERROR: Create a project first','error');return}
   const etype=document.getElementById('entityType').value;
   const val=document.getElementById('entityValue').value.trim();
@@ -1174,6 +1375,7 @@ function renderEntityList(){
 
 /* ─── Execute OSINT Run ─── */
 async function executeRun(){
+  if(!isDisclaimerAcknowledged()){log('ERROR: Acknowledge the ethical use disclaimer first','error');return}
   if(!projectId){log('ERROR: No active project','error');return}
   if(entities.length===0){log('ERROR: Add at least one target first','error');return}
 
@@ -1348,8 +1550,9 @@ function renderFindings(findings){
   });
 }
 
-/* ─── AI Analysis ─── */
+/* ─── AI Analysis (with teaser for free users) ─── */
 async function runAnalysis(){
+  if(!isDisclaimerAcknowledged()){log('ERROR: Acknowledge the ethical use disclaimer first','error');return}
   if(!projectId){log('ERROR: No active project','error');return}
 
   // Freemium gate for AI analysis too
@@ -1372,6 +1575,22 @@ async function runAnalysis(){
     await loadPatterns();
     loadPlatformStats();
     btn.disabled=false;
+
+    // If free user, show teaser overlay with limited info
+    if(!isPremium()){
+      const patterns=await api('GET','/projects/'+projectId+'/patterns');
+      let basicSummary = 'Analysis identified ' + data.patterns_created + ' pattern(s). ';
+      if(patterns.length > 0){
+        // Show only the first summary-type pattern as a teaser
+        const summaryPattern = patterns.find(p => p.pattern_type === 'summary') || patterns[0];
+        const desc = summaryPattern.description || '';
+        // Truncate to ~120 chars for teaser
+        basicSummary += desc.length > 120 ? desc.slice(0, 120) + '...' : desc;
+      } else {
+        basicSummary += 'No actionable patterns detected at this depth.';
+      }
+      showAiTeaser(basicSummary);
+    }
   }catch(e){
     log('ANALYSIS ERROR: '+e.message,'error');
     recordError();
@@ -1387,7 +1606,13 @@ async function loadPatterns(){
     document.getElementById('statPatterns').textContent=patterns.length;
     if(patterns.length>0){
       document.getElementById('panelPatterns').classList.remove('hidden');
-      renderPatterns(patterns);
+      // Premium users see full patterns; free users see limited view
+      if(isPremium()){
+        renderPatterns(patterns);
+        renderDownloadButton();
+      } else {
+        renderPatternsLimited(patterns);
+      }
     }
   }catch(e){
     log('PATTERN LOAD ERROR: '+e.message,'error');
@@ -1410,6 +1635,77 @@ function renderPatterns(patterns){
       +(p.llm_model?' &middot; Model: '+esc(p.llm_model):'')+'</div>';
     container.appendChild(card);
   });
+}
+
+function renderPatternsLimited(patterns){
+  const container=document.getElementById('patternsContainer');
+  container.innerHTML='';
+  // Show only summary types for free users, blur the rest
+  const typeOrder=['summary','relationship','anomaly','lead'];
+  patterns.sort((a,b)=>(typeOrder.indexOf(a.pattern_type)||0)-(typeOrder.indexOf(b.pattern_type)||0));
+  let shown = 0;
+  patterns.forEach(p=>{
+    const card=document.createElement('div');
+    card.className='pattern-card type-'+(p.pattern_type||'summary');
+    const iconMap={summary:'fa-file-lines',relationship:'fa-link',anomaly:'fa-triangle-exclamation',lead:'fa-lightbulb'};
+    const icon=iconMap[p.pattern_type]||'fa-circle-info';
+
+    if(p.pattern_type === 'summary' && shown < 1){
+      // Show first summary in full
+      card.innerHTML='<div class="pattern-type"><i class="fa-solid '+icon+'"></i> '+esc(p.pattern_type||'insight')+'</div>'
+        +'<div class="pattern-desc">'+esc(p.description||'No description')+'</div>'
+        +'<div class="pattern-conf">Confidence: '+(p.confidence!==undefined?Math.round(p.confidence*100)+'%':'N/A')+'</div>';
+      shown++;
+    } else {
+      // Blurred/locked for free users
+      card.style.filter='blur(4px)';
+      card.style.userSelect='none';
+      card.style.position='relative';
+      card.innerHTML='<div class="pattern-type"><i class="fa-solid '+icon+'"></i> '+esc(p.pattern_type||'insight')+'</div>'
+        +'<div class="pattern-desc">'+esc(p.description||'No description')+'</div>'
+        +'<div class="pattern-conf">Confidence: '+(p.confidence!==undefined?Math.round(p.confidence*100)+'%':'N/A')+'</div>';
+    }
+    container.appendChild(card);
+  });
+
+  // Add upgrade prompt at bottom
+  const upsell = document.createElement('div');
+  upsell.style.cssText = 'text-align:center;padding:1.25rem;border:1px dashed var(--amber);border-radius:4px;margin-top:1rem;';
+  upsell.innerHTML = '<div style="color:var(--amber);font-size:.9rem;margin-bottom:.5rem"><i class="fa-solid fa-lock"></i> Premium patterns locked</div>'
+    + '<div style="color:var(--text-dim);font-size:.8rem;margin-bottom:.75rem">Upgrade to unlock deep pattern detection, risk scoring, entity linking, and threat recommendations.</div>'
+    + '<button class="btn btn-amber" onclick="showPaywall()"><i class="fa-solid fa-bolt"></i> Upgrade to Premium</button>';
+  container.appendChild(upsell);
+}
+
+function renderDownloadButton(){
+  const container=document.getElementById('patternsContainer');
+  // Add download report button for premium users
+  if(!document.getElementById('btnDownloadReport')){
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'text-align:center;margin-top:1rem;';
+    wrap.innerHTML = '<button class="btn btn-green btn-lg" id="btnDownloadReport" onclick="downloadReport()">'
+      + '<i class="fa-solid fa-download"></i> Download Report</button>';
+    container.appendChild(wrap);
+  }
+}
+
+async function downloadReport(){
+  if(!projectId) return;
+  try{
+    const report = await api('GET','/projects/'+projectId+'/report');
+    const blob = new Blob([JSON.stringify(report, null, 2)], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'valkyrie-report-'+projectId.slice(0,8)+'.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    log('REPORT: Downloaded full intelligence report','info');
+  }catch(e){
+    log('DOWNLOAD ERROR: '+e.message,'error');
+  }
 }
 
 /* ─── Utilities ─── */
