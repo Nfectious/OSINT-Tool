@@ -582,6 +582,38 @@ body::after{
 .current-inv-label .inv-name{color:var(--green);font-weight:bold}
 .current-inv-label .inv-id{color:var(--text-dim);font-size:.7rem}
 
+/* My Investigations Tabs */
+.inv-tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:.75rem}
+.inv-tab{
+  flex:1;padding:.6rem;text-align:center;font-size:.75rem;letter-spacing:.1em;
+  text-transform:uppercase;cursor:pointer;color:var(--text-dim);background:none;
+  border:none;font-family:var(--mono);border-bottom:2px solid transparent;transition:all .2s;
+}
+.inv-tab:hover{color:var(--text)}
+.inv-tab.active{color:var(--green);border-bottom-color:var(--green)}
+.inv-tab .tab-count{
+  display:inline-block;padding:.1rem .4rem;border-radius:8px;font-size:.65rem;
+  background:rgba(255,255,255,.08);color:var(--text-dim);margin-left:.3rem;
+}
+.inv-tab.active .tab-count{background:rgba(0,255,0,.15);color:var(--green)}
+
+/* History table enhancements */
+.inv-table .col-date{font-size:.7rem;color:var(--text-dim);white-space:nowrap}
+.inv-table .col-targets{font-size:.75rem;color:var(--cyan)}
+.inv-table .col-summary{font-size:.75rem;color:var(--text-dim);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.inv-actions{display:flex;gap:.3rem;align-items:center}
+.btn-view-sm{
+  background:none;border:1px solid var(--green-dim);color:var(--green-dim);
+  padding:.25rem .5rem;border-radius:var(--radius);cursor:pointer;
+  font-family:var(--mono);font-size:.7rem;transition:all .2s;
+}
+.btn-view-sm:hover{border-color:var(--green);color:var(--green);background:rgba(0,255,0,.1)}
+.inv-clear-bar{
+  display:flex;align-items:center;justify-content:space-between;margin-top:.75rem;
+  padding-top:.75rem;border-top:1px solid var(--border);
+}
+.inv-persistence-note{font-size:.65rem;color:var(--text-muted);display:flex;align-items:center;gap:.3rem}
+
 /* Pay-per-report unlock badge */
 .report-unlocked-badge{
   display:inline-flex;align-items:center;gap:.4rem;
@@ -966,11 +998,11 @@ body::after{
     <div class="wb-sub">Explore the DEMO project or create a new one. Add phone targets, execute OSINT runs, and view AI analysis. NumVerify carrier lookup active. Feedback to @L7Dare!</div>
   </div>
 
-  <!-- ACTIVE INVESTIGATIONS -->
+  <!-- MY INVESTIGATIONS -->
   <div class="panel hidden" id="panelInvestigations" style="margin-bottom:1.5rem">
     <div class="panel-head">
       <span class="dot" style="background:var(--green)"></span>
-      <span class="label"><i class="fa-solid fa-folder-open"></i> Active Investigations</span>
+      <span class="label"><i class="fa-solid fa-folder-open"></i> My Investigations</span>
     </div>
     <div class="panel-body">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem">
@@ -979,7 +1011,26 @@ body::after{
           <i class="fa-solid fa-plus"></i> New Investigation
         </button>
       </div>
+      <!-- Tabs: Active / History -->
+      <div class="inv-tabs">
+        <button class="inv-tab active" id="invTabActive" onclick="showInvTab('active')">
+          <i class="fa-solid fa-folder-open"></i> Active <span class="tab-count" id="invActiveCount">0</span>
+        </button>
+        <button class="inv-tab" id="invTabHistory" onclick="showInvTab('history')">
+          <i class="fa-solid fa-clock-rotate-left"></i> History <span class="tab-count" id="invHistoryCount">0</span>
+        </button>
+      </div>
       <div id="investigationsBody"></div>
+      <div id="investigationsHistoryBody" class="hidden"></div>
+      <div class="inv-clear-bar hidden" id="invClearBar">
+        <span class="inv-persistence-note" id="invPersistNote">
+          <i class="fa-solid fa-circle-info"></i>
+          <span id="invPersistText">History saved this session only</span>
+        </span>
+        <button class="btn-delete-sm" onclick="clearAllHistory()" id="btnClearAll" style="padding:.3rem .6rem">
+          <i class="fa-solid fa-trash"></i> Clear All History
+        </button>
+      </div>
     </div>
   </div>
 
@@ -1645,6 +1696,7 @@ async function onAuthSuccess(){
     log('ADMIN MODE: Unlimited access granted','system');
   }
   updateFreemiumUI();
+  migrateHistoryOnUpgrade();
   checkConsent();
   showOnboardingIfNeeded();
   loadInvestigations();
@@ -1696,6 +1748,7 @@ async function createProject(){
     document.getElementById('statsRow').classList.remove('hidden');
     btn.innerHTML='<i class="fa-solid fa-check"></i> Project Active';
     setStep(2);
+    addToHistory(data.id, name, [], 'Investigation created');
     loadInvestigations();
   }catch(e){
     log('ERROR: '+e.message,'error');
@@ -1775,6 +1828,11 @@ async function executeRun(){
     btn.disabled=false;
     document.getElementById('btnAnalyze').disabled=false;
     setStep(4);
+    // Add to investigation history
+    const invName=document.getElementById('currentInvName').textContent||'Unknown';
+    const targets=entities.map(e=>({type:e.entity_type,value:e.value}));
+    const findingsCount=document.getElementById('statFindings').textContent;
+    addToHistory(projectId, invName, targets, findingsCount+' findings collected');
   }catch(e){
     log('RUN ERROR: '+e.message,'error');
     recordError();
@@ -1948,6 +2006,11 @@ async function runAnalysis(){
     await loadPatterns();
     loadPlatformStats();
     btn.disabled=false;
+
+    // Update history with analysis summary
+    const invName2=document.getElementById('currentInvName').textContent||'Unknown';
+    const targets2=entities.map(e=>({type:e.entity_type,value:e.value}));
+    addToHistory(projectId, invName2, targets2, data.patterns_created+' patterns detected via AI analysis');
 
     // If free user (and no per-report unlock), show teaser overlay with limited info
     if(!isPremium() && !isReportUnlocked(projectId)){
@@ -2140,7 +2203,11 @@ async function loadInvestigations(){
     // Stats row only shows current project — don't overwrite with aggregates
     document.getElementById('statsRow').classList.remove('hidden');
 
-    log('LOADED: '+projects.length+' investigation(s) from server','info');
+    // Update tab counts
+    document.getElementById('invActiveCount').textContent=details.length;
+    document.getElementById('invHistoryCount').textContent=getHistory().length;
+
+    log('LOADED: '+details.length+' investigation(s) from server','info');
     document.getElementById('dossierProjects').textContent=projects.length;
 
     if(!projectId||!details.find(d=>d.id===projectId)){
@@ -2359,12 +2426,129 @@ async function deleteProject(id, name, evt){
   try{
     await api('DELETE','/projects/'+id);
     log('DELETED: Investigation "'+name+'" removed','warn');
+    removeFromHistory(id);
     // If we deleted the active project, reset UI
     if(projectId===id) newInvestigation();
     loadInvestigations();
   }catch(e){
     log('DELETE ERROR: '+e.message,'error');
   }
+}
+
+/* ─── Investigation History ─── */
+let currentInvTab='active';
+
+function getHistoryStorage(){
+  // Premium users: localStorage (persistent). Free: sessionStorage (session only).
+  return isPremium() ? localStorage : sessionStorage;
+}
+function getHistory(){
+  try{
+    return JSON.parse(getHistoryStorage().getItem('vk_inv_history') || '[]');
+  }catch(e){return []}
+}
+function saveHistory(history){
+  getHistoryStorage().setItem('vk_inv_history', JSON.stringify(history));
+}
+function migrateHistoryOnUpgrade(){
+  // If user just became premium, move session history to localStorage
+  const sess = sessionStorage.getItem('vk_inv_history');
+  if(sess && isPremium()){
+    const existing = JSON.parse(localStorage.getItem('vk_inv_history') || '[]');
+    const sessData = JSON.parse(sess);
+    const merged = [...existing];
+    sessData.forEach(s=>{
+      if(!merged.find(m=>m.id===s.id)) merged.push(s);
+    });
+    localStorage.setItem('vk_inv_history', JSON.stringify(merged));
+    sessionStorage.removeItem('vk_inv_history');
+  }
+}
+
+function addToHistory(pid, name, targets, summary){
+  const history = getHistory();
+  // Update existing or add new
+  const idx = history.findIndex(h=>h.id===pid);
+  const entry = {
+    id: pid,
+    name: name,
+    date: new Date().toISOString(),
+    targets: targets || [],
+    summary: summary || ''
+  };
+  if(idx>=0) history[idx]=entry;
+  else history.unshift(entry);
+  // Cap at 50 entries
+  if(history.length>50) history.length=50;
+  saveHistory(history);
+}
+
+function removeFromHistory(pid){
+  const history = getHistory().filter(h=>h.id!==pid);
+  saveHistory(history);
+  renderHistoryTab();
+}
+
+function clearAllHistory(){
+  if(!confirm('Clear all investigation history? This cannot be undone.')) return;
+  saveHistory([]);
+  renderHistoryTab();
+  log('HISTORY: All investigation history cleared','warn');
+}
+
+function showInvTab(tab){
+  currentInvTab=tab;
+  document.getElementById('invTabActive').classList.toggle('active',tab==='active');
+  document.getElementById('invTabHistory').classList.toggle('active',tab==='history');
+  document.getElementById('investigationsBody').classList.toggle('hidden',tab!=='active');
+  document.getElementById('investigationsHistoryBody').classList.toggle('hidden',tab!=='history');
+  document.getElementById('invClearBar').classList.toggle('hidden',tab!=='history');
+  if(tab==='history') renderHistoryTab();
+}
+
+function renderHistoryTab(){
+  const history = getHistory();
+  const body = document.getElementById('investigationsHistoryBody');
+  document.getElementById('invHistoryCount').textContent=history.length;
+
+  // Update persistence note
+  const noteText = document.getElementById('invPersistText');
+  if(isPremium()){
+    noteText.innerHTML='<i class="fa-solid fa-crown" style="color:var(--green);margin-right:.2rem"></i> History saved permanently to your account';
+  } else {
+    noteText.textContent='History saved this session only — upgrade for permanent history';
+  }
+
+  if(history.length===0){
+    body.innerHTML='<div class="inv-empty"><i class="fa-solid fa-clock-rotate-left" style="margin-right:.4rem"></i> No investigation history yet. Run an OSINT operation to begin.</div>';
+    return;
+  }
+
+  let html='<table class="inv-table"><thead><tr><th>Date</th><th>Investigation</th><th>Targets</th><th>Summary</th><th></th></tr></thead><tbody>';
+  history.forEach(h=>{
+    const d=new Date(h.date);
+    const dateStr=d.toLocaleDateString()+' '+d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+    const targetsStr=(h.targets||[]).map(t=>t.type+':'+t.value).join(', ');
+    const summaryStr=esc(h.summary||'--').slice(0,80);
+    html+='<tr>';
+    html+='<td class="col-date">'+esc(dateStr)+'</td>';
+    html+='<td>'+esc(h.name)+'</td>';
+    html+='<td class="col-targets" title="'+esc(targetsStr)+'">'+esc(targetsStr.length>30?targetsStr.slice(0,30)+'...':targetsStr||'--')+'</td>';
+    html+='<td class="col-summary" title="'+esc(h.summary||'')+'">'+summaryStr+'</td>';
+    html+='<td><div class="inv-actions">';
+    html+='<button class="btn-view-sm" onclick="viewHistoryEntry(\''+h.id+'\',\''+esc(h.name).replace(/'/g,"\\'")+'\')"><i class="fa-solid fa-eye"></i> View</button>';
+    html+='<button class="btn-delete-sm" onclick="removeFromHistory(\''+h.id+'\')"><i class="fa-solid fa-trash"></i></button>';
+    html+='</div></td>';
+    html+='</tr>';
+  });
+  html+='</tbody></table>';
+  body.innerHTML=html;
+}
+
+function viewHistoryEntry(pid, name){
+  // Switch to active tab and select the project
+  showInvTab('active');
+  selectProject(pid, name);
 }
 
 /* ─── Init ─── */
