@@ -582,6 +582,21 @@ body::after{
 .current-inv-label .inv-name{color:var(--green);font-weight:bold}
 .current-inv-label .inv-id{color:var(--text-dim);font-size:.7rem}
 
+/* Pay-per-report unlock badge */
+.report-unlocked-badge{
+  display:inline-flex;align-items:center;gap:.4rem;
+  padding:.3rem .7rem;border-radius:var(--radius);font-size:.7rem;
+  letter-spacing:.1em;text-transform:uppercase;
+  background:rgba(6,182,212,.1);color:var(--cyan);border:1px solid var(--cyan-dim);
+  margin-bottom:.75rem;
+}
+.btn-buy-report{
+  background:linear-gradient(180deg,var(--cyan-dim),#164e63);
+  border-color:var(--cyan-dim);color:var(--cyan);
+  box-shadow:0 0 10px rgba(6,182,212,.2);
+}
+.btn-buy-report:hover:not(:disabled){box-shadow:0 0 20px rgba(6,182,212,.4);transform:scale(1.04)}
+
 /* Scrollbar */
 ::-webkit-scrollbar{width:6px}
 ::-webkit-scrollbar-track{background:var(--bg)}
@@ -796,10 +811,35 @@ body::after{
       <span style="color:var(--text);font-size:.8rem">Unlock the real intelligence behind your targets.</span>
     </div>
     <div class="teaser-actions">
+      <button class="btn btn-buy-report" onclick="closeAiTeaser();showReportPay()">
+        <i class="fa-solid fa-file-shield"></i> Full Report &mdash; $4.99
+      </button>
       <button class="btn btn-amber" onclick="showPaywall();closeAiTeaser()">
-        <i class="fa-solid fa-bolt"></i> Upgrade Now
+        <i class="fa-solid fa-crown"></i> Subscribe $9.99/mo
       </button>
       <button class="btn" onclick="closeAiTeaser()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- PAY-PER-REPORT OVERLAY -->
+<div class="paywall-overlay hidden" id="reportPayOverlay">
+  <div class="paywall-box" style="border-color:var(--cyan);box-shadow:0 0 40px rgba(6,182,212,.2)">
+    <h2 style="color:var(--cyan)"><i class="fa-solid fa-file-shield"></i> FULL DETAILED REPORT</h2>
+    <p>Your basic AI summary is ready. Unlock the full detailed report for this investigation.</p>
+    <div class="price" style="color:var(--cyan)">$4.99 <span style="font-size:.8rem;color:var(--text-dim)">one-time</span></div>
+    <ul>
+      <li><i class="fa-solid fa-brain" style="color:var(--cyan)"></i> Deep pattern detection &amp; risk scoring</li>
+      <li><i class="fa-solid fa-link" style="color:var(--cyan)"></i> Entity linking &amp; relationship mapping</li>
+      <li><i class="fa-solid fa-triangle-exclamation" style="color:var(--cyan)"></i> Anomaly alerts &amp; threat recommendations</li>
+      <li><i class="fa-solid fa-download" style="color:var(--cyan)"></i> Downloadable report (JSON)</li>
+    </ul>
+    <div id="report-paypal-container" style="min-height:50px;margin-bottom:.75rem"></div>
+    <div style="display:flex;gap:.75rem;justify-content:center;flex-wrap:wrap">
+      <button class="btn btn-amber" onclick="showPaywall();closeReportPay()" style="font-size:.8rem">
+        <i class="fa-solid fa-crown"></i> Or subscribe $9.99/mo for unlimited
+      </button>
+      <button class="paywall-close" onclick="closeReportPay()">Maybe Later</button>
     </div>
   </div>
 </div>
@@ -1255,7 +1295,7 @@ function incrementRunCount(){
 function isAdmin(){
   return currentUser && (
     currentUser.tier === 'admin' ||
-    (currentUser.email && currentUser.email.endsWith('@bsapservices.com'))
+    (currentUser.email && currentUser.email === 'tcmherd@proton.me')
   );
 }
 function isPremium(){
@@ -1351,6 +1391,56 @@ function renderPayPalButton(){
       log('PAYPAL ERROR: ' + err, 'error');
     }
   }).render('#paypal-button-container');
+}
+
+/* ─── Pay-Per-Report ─── */
+function isReportUnlocked(pid){
+  const unlocked = JSON.parse(localStorage.getItem('vk_unlocked_reports') || '[]');
+  return unlocked.includes(pid);
+}
+function unlockReport(pid){
+  const unlocked = JSON.parse(localStorage.getItem('vk_unlocked_reports') || '[]');
+  if(!unlocked.includes(pid)) unlocked.push(pid);
+  localStorage.setItem('vk_unlocked_reports', JSON.stringify(unlocked));
+}
+function showReportPay(){
+  document.getElementById('reportPayOverlay').classList.remove('hidden');
+  renderReportPayPalButton();
+}
+function closeReportPay(){
+  document.getElementById('reportPayOverlay').classList.add('hidden');
+}
+let reportPaypalRendered = false;
+function renderReportPayPalButton(){
+  if(reportPaypalRendered) return;
+  if(typeof paypal === 'undefined'){
+    document.getElementById('report-paypal-container').innerHTML = '<p style="color:var(--text-dim);font-size:.8rem">PayPal SDK loading... Refresh if needed.</p>';
+    return;
+  }
+  reportPaypalRendered = true;
+  paypal.Buttons({
+    style: {shape:'rect', color:'silver', layout:'vertical', label:'pay'},
+    createOrder: function(data, actions){
+      return actions.order.create({
+        purchase_units: [{
+          description: 'VALKYRIE OSINT Full Detailed Report',
+          amount: {value: '4.99', currency_code: 'USD'}
+        }]
+      });
+    },
+    onApprove: function(data, actions){
+      return actions.order.capture().then(function(details){
+        if(projectId) unlockReport(projectId);
+        closeReportPay();
+        log('REPORT PURCHASED: Full report unlocked for project ' + (projectId ? projectId.slice(0,8) : '??'), 'info');
+        alert('Report unlocked! Loading full analysis...');
+        loadPatterns();
+      });
+    },
+    onError: function(err){
+      log('PAYPAL REPORT ERROR: ' + err, 'error');
+    }
+  }).render('#report-paypal-container');
 }
 
 /* ─── Consent ─── */
@@ -1859,15 +1949,13 @@ async function runAnalysis(){
     loadPlatformStats();
     btn.disabled=false;
 
-    // If free user, show teaser overlay with limited info
-    if(!isPremium()){
+    // If free user (and no per-report unlock), show teaser overlay with limited info
+    if(!isPremium() && !isReportUnlocked(projectId)){
       const patterns=await api('GET','/projects/'+projectId+'/patterns');
       let basicSummary = 'Analysis identified ' + data.patterns_created + ' pattern(s). ';
       if(patterns.length > 0){
-        // Show only the first summary-type pattern as a teaser
         const summaryPattern = patterns.find(p => p.pattern_type === 'summary') || patterns[0];
         const desc = summaryPattern.description || '';
-        // Truncate to ~120 chars for teaser
         basicSummary += desc.length > 120 ? desc.slice(0, 120) + '...' : desc;
       } else {
         basicSummary += 'No actionable patterns detected at this depth.';
@@ -1891,8 +1979,8 @@ async function loadPatterns(){
     if(patterns.length>0){
       const pp=document.getElementById('panelPatterns');
       pp.classList.remove('hidden','collapsed');
-      // Premium users see full patterns; free users see limited view
-      if(isPremium()){
+      // Premium/admin see full patterns; per-report purchasers see full for that project; free users see limited
+      if(isPremium() || isReportUnlocked(projectId)){
         renderPatterns(patterns);
         renderDownloadButton();
       } else {
@@ -1953,12 +2041,16 @@ function renderPatternsLimited(patterns){
     container.appendChild(card);
   });
 
-  // Add upgrade prompt at bottom
+  // Add buy-report + upgrade prompt at bottom
   const upsell = document.createElement('div');
-  upsell.style.cssText = 'text-align:center;padding:1.25rem;border:1px dashed var(--amber);border-radius:4px;margin-top:1rem;';
-  upsell.innerHTML = '<div style="color:var(--amber);font-size:.9rem;margin-bottom:.5rem"><i class="fa-solid fa-lock"></i> Premium patterns locked</div>'
-    + '<div style="color:var(--text-dim);font-size:.8rem;margin-bottom:.75rem">Upgrade to unlock deep pattern detection, risk scoring, entity linking, and threat recommendations.</div>'
-    + '<button class="btn btn-amber" onclick="showPaywall()"><i class="fa-solid fa-bolt"></i> Upgrade to Premium</button>';
+  upsell.style.cssText = 'text-align:center;padding:1.25rem;border:1px dashed var(--cyan);border-radius:4px;margin-top:1rem;background:rgba(6,182,212,.03)';
+  upsell.innerHTML = '<div style="color:var(--cyan);font-size:1rem;margin-bottom:.5rem"><i class="fa-solid fa-file-shield"></i> Full Report Available</div>'
+    + '<div style="color:var(--text-dim);font-size:.85rem;margin-bottom:1rem;line-height:1.6">Deep pattern detection, risk scoring, entity linking, anomaly alerts, and threat recommendations with downloadable report.</div>'
+    + '<div style="display:flex;gap:.75rem;justify-content:center;flex-wrap:wrap;align-items:center">'
+    + '<button class="btn btn-buy-report btn-lg" onclick="showReportPay()"><i class="fa-solid fa-file-shield"></i> Get Full Report &mdash; $4.99</button>'
+    + '<span style="color:var(--text-muted);font-size:.75rem">or</span>'
+    + '<button class="btn btn-amber" onclick="showPaywall()"><i class="fa-solid fa-crown"></i> Subscribe $9.99/mo</button>'
+    + '</div>';
   container.appendChild(upsell);
 }
 
