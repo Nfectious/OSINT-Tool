@@ -155,8 +155,23 @@ body::after{
   background:var(--red-dim);color:var(--red);border:1px solid var(--red-dim);
 }
 .entity-item .eval{color:var(--text)}
-.entity-item .remove{cursor:pointer;color:var(--text-muted);font-size:1rem}
-.entity-item .remove:hover{color:var(--red)}
+.entity-item .remove{cursor:pointer;color:var(--text-muted);font-size:.85rem;background:none;border:1px solid var(--red-dim);border-radius:2px;padding:.15rem .4rem;transition:all .2s;font-family:var(--mono)}
+.entity-item .remove:hover{color:var(--red);border-color:var(--red);background:rgba(255,0,0,.1)}
+/* Clear-targets bar */
+.clear-targets-bar{display:flex;align-items:center;justify-content:space-between;margin-top:.5rem;padding-top:.5rem;border-top:1px solid var(--border)}
+.targets-count{font-size:.75rem;color:var(--text-dim)}
+/* Admin mode banner */
+.admin-banner{
+  display:flex;align-items:center;gap:.75rem;padding:.75rem 1.25rem;
+  margin-bottom:1rem;border-radius:var(--radius);
+  background:rgba(255,0,0,.07);border:1px solid var(--red-dim);
+  font-size:.9rem;color:var(--red);box-shadow:0 0 18px rgba(255,0,0,.12);
+}
+.admin-banner i{font-size:1.1rem;flex-shrink:0}
+.admin-banner strong{letter-spacing:.1em}
+/* Run counter glow when low */
+.runs-low{animation:runs-glow 1.5s ease-in-out infinite alternate}
+@keyframes runs-glow{from{text-shadow:0 0 0 transparent}to{text-shadow:0 0 8px rgba(245,158,11,.6)}}
 .entity-status{font-size:.7rem;padding:.15rem .45rem;border-radius:2px;letter-spacing:.05em}
 .entity-status.pending{color:var(--text-dim);border:1px solid var(--text-muted)}
 .entity-status.running{color:var(--amber);border:1px solid var(--amber-dim);animation:pulse 1s infinite}
@@ -968,6 +983,12 @@ body::after{
     </div>
   </div>
 
+  <!-- ADMIN MODE BANNER (hidden until admin logs in) -->
+  <div class="admin-banner hidden" id="adminBanner">
+    <i class="fa-solid fa-shield-halved"></i>
+    <span><strong>ADMIN MODE &mdash; UNLIMITED ACCESS</strong> &mdash; All limits bypassed. Full AI analysis enabled.</span>
+  </div>
+
   <!-- FREEMIUM BAR -->
   <div class="freemium-bar" id="freemiumBar">
     <i class="fa-solid fa-gauge" style="color:var(--amber)"></i>
@@ -1134,6 +1155,10 @@ body::after{
         </button>
         <div style="text-align:center;font-size:.75rem;color:var(--text-muted);margin-top:.5rem">Enter phone, email, username, IP, or domain.</div>
         <ul class="entity-list" id="entityList"></ul>
+        <div class="clear-targets-bar hidden" id="clearTargetsBar">
+          <span class="targets-count" id="targetsCount">0 targets</span>
+          <button class="btn-delete-sm" onclick="clearAllTargets()"><i class="fa-solid fa-trash"></i> Clear All Targets</button>
+        </div>
       </div>
     </div>
 
@@ -1384,46 +1409,65 @@ function updateFreemiumUI(){
   const btnUp = document.getElementById('btnUpgradeSmall');
   const footerUp = document.getElementById('footerUpgrade');
   const wpSection = document.getElementById('whyPremium');
+  const adminBanner = document.getElementById('adminBanner');
 
   if(isAdmin()){
-    text.innerHTML = '<span style="color:var(--red);font-weight:bold"><i class="fa-solid fa-shield-halved"></i> ADMIN MODE &mdash; UNLIMITED ACCESS</span>';
-    prog.style.width = '100%';
-    prog.style.background = 'var(--red)';
-    btnUp.classList.add('hidden');
-    bar.style.borderColor = 'rgba(255,0,0,.25)';
-    bar.style.background = 'rgba(255,0,0,.05)';
+    if(adminBanner) adminBanner.classList.remove('hidden');
+    bar.classList.add('hidden');
     footerUp.innerHTML = '<span style="color:var(--red)"><i class="fa-solid fa-shield-halved"></i> Admin Mode &mdash; Unlimited Access</span>';
-    wpSection.classList.add('hidden');
+    if(wpSection) wpSection.classList.add('hidden');
     updateAiPremiumUI();
     return;
   }
+  if(adminBanner) adminBanner.classList.add('hidden');
+
   if(isPremium()){
-    text.innerHTML = '<span class="premium-badge"><i class="fa-solid fa-crown"></i> PREMIUM ACTIVE</span>';
+    bar.classList.remove('hidden');
+    text.innerHTML = '<span class="premium-badge"><i class="fa-solid fa-crown"></i> PREMIUM ACTIVE &mdash; UNLIMITED</span>';
     prog.style.width = '100%';
     prog.style.background = 'var(--green)';
+    prog.style.boxShadow = '0 0 8px rgba(0,255,0,.5)';
     btnUp.classList.add('hidden');
     bar.style.borderColor = 'rgba(0,255,0,.25)';
     bar.style.background = 'rgba(0,255,0,.05)';
     footerUp.innerHTML = '<span style="color:var(--green)"><i class="fa-solid fa-crown"></i> Premium Active &mdash; Unlimited Runs &amp; Full AI</span>';
-    wpSection.classList.add('hidden');
+    if(wpSection) wpSection.classList.add('hidden');
     updateAiPremiumUI();
     return;
   }
 
-  wpSection.classList.remove('hidden');
+  bar.classList.remove('hidden');
+  if(wpSection) wpSection.classList.remove('hidden');
   const used = getRunCount();
   const left = Math.max(0, FREE_DAILY_LIMIT - used);
+  const pct = Math.round((left / FREE_DAILY_LIMIT) * 100);
+
+  text.className = 'runs-left';
+  text.style.color = '';
   text.textContent = left + '/' + FREE_DAILY_LIMIT + ' free runs left today';
-  prog.style.width = Math.round((left / FREE_DAILY_LIMIT) * 100) + '%';
+  prog.style.width = pct + '%';
+  prog.style.boxShadow = '';
 
   if(left === 0){
     prog.style.background = 'var(--red)';
     text.style.color = 'var(--red)';
+    prog.style.boxShadow = '0 0 6px rgba(255,0,0,.4)';
+    btnUp.classList.remove('hidden');
   } else if(left <= 2){
     prog.style.background = 'var(--amber)';
+    text.className = 'runs-left runs-low';
+    btnUp.classList.remove('hidden');
   } else {
     prog.style.background = 'var(--green)';
+    prog.style.boxShadow = '0 0 6px rgba(0,255,0,.3)';
+    btnUp.classList.remove('hidden');
   }
+
+  footerUp.innerHTML = 'Free Tier: <strong style="color:var(--amber)">'
+    + left + '/' + FREE_DAILY_LIMIT + ' runs left today</strong> &mdash; '
+    + '<a href="#" onclick="showPaywall();return false" style="color:var(--amber);text-decoration:underline">Upgrade to Premium</a>'
+    + ' for Unlimited Runs &amp; Full AI';
+
   updateAiPremiumUI();
 }
 
@@ -1713,9 +1757,9 @@ async function onAuthSuccess(){
     document.getElementById('userTier').style.color='var(--red)';
     document.getElementById('userTier').style.borderColor='var(--red-dim)';
     document.getElementById('dossierClearance').textContent='ADMIN — UNLIMITED';
-    log('ADMIN MODE: Unlimited access granted','system');
+    log('ADMIN MODE: Unlimited access granted — no run limits','system');
   }
-  updateFreemiumUI();
+  updateFreemiumUI(); // sets admin banner, run counter, etc.
   migrateHistoryOnUpgrade();
   checkConsent();
   showOnboardingIfNeeded();
@@ -1806,13 +1850,51 @@ async function addEntity(){
 function renderEntityList(){
   const ul=document.getElementById('entityList');
   ul.innerHTML='';
-  entities.forEach((ent,i)=>{
+  entities.forEach((ent)=>{
     const li=document.createElement('li');
     li.className='entity-item';
-    li.innerHTML='<span><span class="etype">'+ent.entity_type+'</span><span class="eval">'+esc(ent.value)+'</span></span>'
-      +'<span class="entity-status '+(ent.status||'pending')+'">'+(ent.status||'pending')+'</span>';
+    li.innerHTML='<span style="flex:1;min-width:0"><span class="etype">'+esc(ent.entity_type)+'</span><span class="eval" style="word-break:break-all">'+esc(ent.value)+'</span>'+(ent.label?'<span style="color:var(--text-muted);font-size:.7rem;margin-left:.4rem">('+esc(ent.label)+')</span>':'')+'</span>'
+      +'<span style="display:flex;align-items:center;gap:.4rem;flex-shrink:0">'
+      +'<span class="entity-status '+(ent.status||'pending')+'">'+(ent.status||'pending')+'</span>'
+      +'<button class="remove" onclick="deleteEntity(\''+ent.id+'\')" title="Remove target"><i class="fa-solid fa-xmark"></i></button>'
+      +'</span>';
     ul.appendChild(li);
   });
+  // Show/hide clear bar
+  const bar=document.getElementById('clearTargetsBar');
+  const cnt=document.getElementById('targetsCount');
+  if(entities.length>0){
+    bar.classList.remove('hidden');
+    cnt.textContent=entities.length+' target'+(entities.length===1?'':'s');
+  }else{
+    bar.classList.add('hidden');
+  }
+  updateStats();
+}
+
+async function deleteEntity(entityId){
+  if(!projectId) return;
+  try{
+    await api('DELETE','/projects/'+projectId+'/entities/'+entityId);
+    entities=entities.filter(e=>e.id!==entityId);
+    renderEntityList();
+    log('TARGET REMOVED: entity '+entityId.slice(0,8),'warn');
+  }catch(e){
+    log('DELETE TARGET ERROR: '+e.message,'error');
+  }
+}
+
+async function clearAllTargets(){
+  if(!projectId||entities.length===0) return;
+  if(!confirm('Remove all '+entities.length+' targets from this investigation?')) return;
+  for(const ent of [...entities]){
+    try{
+      await api('DELETE','/projects/'+projectId+'/entities/'+ent.id);
+    }catch(e){}
+  }
+  entities=[];
+  renderEntityList();
+  log('TARGETS CLEARED: All entities removed from investigation','warn');
 }
 
 /* ─── Execute OSINT Run ─── */
@@ -1833,10 +1915,10 @@ async function executeRun(){
   document.getElementById('runStatus').classList.add('active');
   log('EXECUTE: Starting OSINT collection run...','warn');
 
-  // Record aggregate stats
+  // Record aggregate stats and decrement daily quota
   const entityTypes = entities.map(e => e.entity_type);
+  if(!isAdmin() && !isPremium()) incrementRunCount();
   recordRun(entityTypes);
-  incrementRunCount();
 
   try{
     const data=await api('POST','/projects/'+projectId+'/run',null,true);
@@ -1878,7 +1960,7 @@ async function refreshProject(){
 function updateStats(projectData){
   document.getElementById('statEntities').textContent=entities.length;
   if(projectData){
-    document.getElementById('statFindings').textContent=projectData.pattern_count!==undefined?'--':0;
+    document.getElementById('statFindings').textContent=projectData.entity_count!==undefined?document.getElementById('statFindings').textContent:0;
   }
 }
 
@@ -2016,11 +2098,11 @@ async function runAnalysis(){
   const btn=document.getElementById('btnAnalyze');
   btn.disabled=true;
   document.getElementById('analyzeStatus').classList.add('active');
-  log('ANALYSIS: Initiating AI pattern analysis...','warn');
+  log('ANALYSIS: Initiating AI pattern analysis (llama3.2:3b via Ollama)...','warn');
   recordAnalysis();
 
-  // AI runs consume daily quota for free users
-  if(!isPremium()) incrementRunCount();
+  // AI runs consume daily quota for free users (not admin)
+  if(!isAdmin() && !isPremium()) incrementRunCount();
 
   try{
     const data=await api('POST','/projects/'+projectId+'/analyze',null,true);
@@ -2036,23 +2118,23 @@ async function runAnalysis(){
     addToHistory(projectId, invName2, targets2, data.patterns_created+' patterns detected via AI analysis');
 
     // If free user (and no per-report unlock), show teaser overlay with limited info
-    if(!isPremium() && !isReportUnlocked(projectId)){
+    if(!isAdmin() && !isPremium() && !isReportUnlocked(projectId)){
       const patterns=await api('GET','/projects/'+projectId+'/patterns');
-      let basicSummary = 'Analysis identified ' + data.patterns_created + ' pattern(s). ';
+      let basicSummary = '';
       const riskP = patterns.find(p => p.pattern_type === 'risk_score');
-      if(riskP) basicSummary = 'Risk Score: ' + riskP.description.toUpperCase() + '. ';
-      if(patterns.length > 0){
+      if(riskP) basicSummary += 'Risk Level: ' + riskP.description.toUpperCase() + '. ';
+      if(data.patterns_created === 0){
+        basicSummary += 'AI analysis ran but produced no structured patterns. This can happen when findings are minimal or the target returned limited public data. Run OSINT first, then re-run analysis.';
+      } else {
         const summaryPattern = patterns.find(p => p.pattern_type === 'summary');
         if(summaryPattern){
           const desc = summaryPattern.description || '';
-          basicSummary += desc.length > 200 ? desc.slice(0, 200) + '...' : desc;
+          basicSummary += desc.length > 280 ? desc.slice(0, 280) + '...' : desc;
         } else {
-          basicSummary += data.patterns_created + ' pattern(s) detected.';
+          basicSummary += data.patterns_created + ' pattern(s) detected by AI. Full details available in the premium report.';
         }
-      } else {
-        basicSummary += 'No actionable patterns detected at this depth.';
       }
-      showAiTeaser(basicSummary);
+      showAiTeaser(basicSummary || 'Analysis complete. Upgrade to view full patterns and risk breakdown.');
     }
   }catch(e){
     log('ANALYSIS ERROR: '+e.message,'error');
@@ -2296,6 +2378,7 @@ function selectProject(id,name){
   // ─── PROJECT ISOLATION: clear everything before loading ───
   entities=[];
   document.getElementById('entityList').innerHTML='';
+  document.getElementById('clearTargetsBar').classList.add('hidden');
   document.getElementById('findingsGrid').innerHTML='';
   document.getElementById('panelFindings').classList.add('hidden','collapsed');
   document.getElementById('findingsCount').textContent='0';
@@ -2438,6 +2521,7 @@ function newInvestigation(){
 
   // Clear entity list
   document.getElementById('entityList').innerHTML='';
+  document.getElementById('clearTargetsBar').classList.add('hidden');
 
   // Clear findings
   document.getElementById('findingsGrid').innerHTML='';

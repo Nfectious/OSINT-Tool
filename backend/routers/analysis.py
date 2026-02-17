@@ -1,12 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
 
 from database import get_db
-from rate_limit import limiter
-from auth import get_current_user_id
 from models.project import Project
 from models.pattern import Pattern
 from models.entity import Entity
@@ -31,30 +29,7 @@ class PatternResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
-class AnalysisResponse(BaseModel):
-    project_id: str
-    patterns_created: int
-    message: str
-
-
 # --- Routes ---
-
-@router.post("/projects/{project_id}/analyze", response_model=AnalysisResponse)
-@limiter.limit("10/minute")
-def analyze_project(project_id: str, request: Request, db: Session = Depends(get_db), user_id: str = Depends(get_current_user_id)):
-    project = db.query(Project).filter(Project.id == project_id).first()
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
-
-    from services.llm_analyzer import LLMAnalyzer
-    analyzer = LLMAnalyzer(db)
-    result = analyzer.analyze_project(project_id)
-    return AnalysisResponse(
-        project_id=project_id,
-        patterns_created=result["patterns_created"],
-        message=result["message"],
-    )
-
 
 @router.get("/projects/{project_id}/patterns", response_model=list[PatternResponse])
 def list_patterns(project_id: str, db: Session = Depends(get_db)):
