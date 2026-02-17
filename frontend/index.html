@@ -441,6 +441,147 @@ body::after{
 .site-footer .upgrade-hint{color:var(--amber);font-size:.8rem}
 .inv-empty{text-align:center;padding:1.5rem;color:var(--text-dim);font-size:.85rem}
 
+/* Step Indicator */
+.step-indicator{
+  display:flex;align-items:center;justify-content:center;gap:0;
+  margin-bottom:1.5rem;padding:1rem;
+  background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);
+}
+.step-item{
+  display:flex;align-items:center;gap:.5rem;padding:.5rem 1rem;
+  font-size:.8rem;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--text-muted);position:relative;
+  transition:all .3s ease;
+}
+.step-item .step-num{
+  width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  border:2px solid var(--text-muted);font-size:.75rem;font-weight:bold;
+  transition:all .3s ease;flex-shrink:0;
+}
+.step-item.active{color:var(--red)}
+.step-item.active .step-num{border-color:var(--red);background:var(--red);color:#fff;box-shadow:0 0 12px rgba(255,0,0,.4)}
+.step-item.complete{color:var(--green)}
+.step-item.complete .step-num{border-color:var(--green);background:var(--green);color:#fff}
+.step-connector{width:40px;height:2px;background:var(--text-muted);flex-shrink:0}
+.step-connector.done{background:var(--green)}
+@media(max-width:768px){
+  .step-indicator{flex-wrap:wrap;gap:.5rem}
+  .step-connector{width:20px}
+  .step-item{font-size:.7rem;padding:.4rem .6rem}
+}
+
+/* Onboarding Banner */
+.onboarding-banner{
+  background:linear-gradient(135deg,#1a0000,#1a1a00);
+  border:1px solid var(--red);border-radius:var(--radius);
+  padding:1rem 1.25rem;margin-bottom:1.25rem;
+  display:flex;align-items:center;gap:1rem;
+  animation:onboard-glow 2s ease-in-out infinite alternate;
+}
+@keyframes onboard-glow{from{box-shadow:0 0 5px rgba(255,0,0,.1)}to{box-shadow:0 0 15px rgba(255,0,0,.2)}}
+.onboarding-banner .ob-icon{font-size:1.5rem;color:var(--red);flex-shrink:0}
+.onboarding-banner .ob-text{font-size:.85rem;line-height:1.6;color:var(--text);flex:1}
+.onboarding-banner .ob-text strong{color:var(--red)}
+.onboarding-banner .ob-dismiss{
+  background:none;border:1px solid var(--border);color:var(--text-dim);
+  padding:.35rem .75rem;border-radius:var(--radius);cursor:pointer;
+  font-family:var(--mono);font-size:.75rem;flex-shrink:0;
+}
+.onboarding-banner .ob-dismiss:hover{color:var(--text);border-color:var(--text-dim)}
+
+/* Section Divider */
+.section-divider{
+  display:flex;align-items:center;gap:.75rem;
+  margin:1.75rem 0 1rem;grid-column:1/-1;
+}
+.section-divider::before,.section-divider::after{
+  content:'';flex:1;height:1px;background:var(--border-light);
+}
+.section-divider .sd-label{
+  font-size:.7rem;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--text-dim);white-space:nowrap;display:flex;align-items:center;gap:.5rem;
+}
+.section-divider .sd-num{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:22px;height:22px;border-radius:50%;border:1px solid var(--red-dim);
+  font-size:.65rem;color:var(--red);font-weight:bold;
+}
+
+/* Collapsible Panel */
+.panel-collapsible .panel-head{cursor:pointer;user-select:none}
+.panel-collapsible .panel-head:hover{background:rgba(255,255,255,.04)}
+.panel-collapsible .panel-head .collapse-chevron{
+  margin-left:auto;font-size:.7rem;transition:transform .2s;color:var(--text-dim);
+}
+.panel-collapsible.collapsed .panel-body{display:none}
+.panel-collapsible.collapsed .collapse-chevron{transform:rotate(-90deg)}
+.panel-collapsible .panel-head .collapse-badge{
+  margin-left:.5rem;font-size:.7rem;padding:.1rem .5rem;border-radius:10px;
+  background:rgba(255,255,255,.08);color:var(--text-dim);
+}
+
+/* Delete Project Button */
+.btn-delete-sm{
+  background:none;border:1px solid var(--red-dim);color:var(--red-dim);
+  padding:.25rem .5rem;border-radius:var(--radius);cursor:pointer;
+  font-family:var(--mono);font-size:.7rem;transition:all .2s;
+}
+.btn-delete-sm:hover{border-color:var(--red);color:var(--red);background:rgba(255,0,0,.1)}
+
+/* AI Premium Example Preview */
+.ai-example-preview{
+  background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);
+  padding:1.25rem;margin-top:1rem;position:relative;overflow:hidden;
+}
+.ai-example-preview::after{
+  content:'';position:absolute;bottom:0;left:0;right:0;height:80px;
+  background:linear-gradient(transparent,var(--panel));pointer-events:none;
+}
+.ai-example-preview .example-label{
+  font-size:.65rem;letter-spacing:.15em;text-transform:uppercase;
+  color:var(--amber);margin-bottom:.75rem;display:flex;align-items:center;gap:.4rem;
+}
+.ai-example-preview .example-card{
+  background:rgba(255,255,255,.02);border:1px solid var(--border);border-radius:var(--radius);
+  padding:.75rem;margin-bottom:.6rem;border-left:3px solid var(--cyan);font-size:.85rem;
+}
+.ai-example-preview .example-card .ex-type{
+  font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;color:var(--cyan);margin-bottom:.3rem;
+}
+.ai-example-preview .example-card .ex-desc{color:var(--text-dim);line-height:1.5;font-size:.8rem}
+.ai-example-preview .example-card.ex-anomaly{border-left-color:var(--red)}
+.ai-example-preview .example-card.ex-anomaly .ex-type{color:var(--red)}
+.ai-example-preview .example-card.ex-lead{border-left-color:var(--green)}
+.ai-example-preview .example-card.ex-lead .ex-type{color:var(--green)}
+.ai-premium-gate{
+  text-align:center;padding:1.5rem;border:1px dashed var(--amber);border-radius:var(--radius);
+  margin-top:1rem;background:rgba(245,158,11,.04);
+}
+.ai-premium-gate .gate-title{color:var(--amber);font-size:1rem;letter-spacing:.12em;margin-bottom:.5rem}
+.ai-premium-gate .gate-desc{color:var(--text-dim);font-size:.85rem;line-height:1.6;margin-bottom:1rem}
+
+/* Investigation View Toggle */
+.view-toggle{
+  display:inline-flex;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;
+  font-size:.75rem;
+}
+.view-toggle button{
+  padding:.35rem .75rem;background:none;border:none;color:var(--text-dim);
+  cursor:pointer;font-family:var(--mono);font-size:.75rem;letter-spacing:.05em;
+  transition:all .2s;
+}
+.view-toggle button:hover{color:var(--text)}
+.view-toggle button.active{background:var(--red);color:#fff}
+
+/* Current Investigation Label */
+.current-inv-label{
+  display:flex;align-items:center;gap:.5rem;padding:.5rem .75rem;
+  background:rgba(0,255,0,.05);border:1px solid rgba(0,255,0,.15);
+  border-radius:var(--radius);margin-bottom:1rem;font-size:.8rem;
+}
+.current-inv-label .inv-name{color:var(--green);font-weight:bold}
+.current-inv-label .inv-id{color:var(--text-dim);font-size:.7rem}
+
 /* Scrollbar */
 ::-webkit-scrollbar{width:6px}
 ::-webkit-scrollbar-track{background:var(--bg)}
@@ -745,6 +886,38 @@ body::after{
     </button>
   </div>
 
+  <!-- ONBOARDING BANNER (first login) -->
+  <div class="onboarding-banner hidden" id="onboardingBanner">
+    <span class="ob-icon"><i class="fa-solid fa-rocket"></i></span>
+    <div class="ob-text">
+      <strong>START HERE:</strong> Create a new investigation, add targets, then execute your OSINT run. Each investigation is isolated &mdash; switch between them from the Active Investigations panel.
+    </div>
+    <button class="ob-dismiss" onclick="dismissOnboarding()"><i class="fa-solid fa-xmark"></i> Dismiss</button>
+  </div>
+
+  <!-- STEP INDICATOR -->
+  <div class="step-indicator" id="stepIndicator">
+    <div class="step-item active" id="step1">
+      <span class="step-num">1</span>
+      <span>Create</span>
+    </div>
+    <div class="step-connector" id="conn1-2"></div>
+    <div class="step-item" id="step2">
+      <span class="step-num">2</span>
+      <span>Add Targets</span>
+    </div>
+    <div class="step-connector" id="conn2-3"></div>
+    <div class="step-item" id="step3">
+      <span class="step-num">3</span>
+      <span>Run</span>
+    </div>
+    <div class="step-connector" id="conn3-4"></div>
+    <div class="step-item" id="step4">
+      <span class="step-num">4</span>
+      <span>Analyze</span>
+    </div>
+  </div>
+
   <!-- WELCOME BANNER -->
   <div class="welcome-banner hidden" id="welcomeBanner">
     <strong id="welcomeUser">Welcome back!</strong><br>
@@ -757,10 +930,26 @@ body::after{
       <span class="dot" style="background:var(--green)"></span>
       <span class="label"><i class="fa-solid fa-folder-open"></i> Active Investigations</span>
     </div>
-    <div class="panel-body" id="investigationsBody"></div>
+    <div class="panel-body">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem">
+        <span class="text-dim text-sm">Select an investigation or start fresh</span>
+        <button class="btn btn-red" id="btnNewInvestigation" onclick="newInvestigation()" style="font-size:.75rem;padding:.4rem .8rem">
+          <i class="fa-solid fa-plus"></i> New Investigation
+        </button>
+      </div>
+      <div id="investigationsBody"></div>
+    </div>
   </div>
 
-  <!-- STATS ROW -->
+  <!-- CURRENT INVESTIGATION CONTEXT -->
+  <div class="current-inv-label hidden" id="currentInvLabel">
+    <i class="fa-solid fa-folder-open" style="color:var(--green)"></i>
+    <span>Active:</span>
+    <span class="inv-name" id="currentInvName">--</span>
+    <span class="inv-id" id="currentInvId"></span>
+  </div>
+
+  <!-- STATS ROW (current investigation only) -->
   <div class="stats-row" id="statsRow">
     <div class="stat-box"><div class="val" id="statEntities">0</div><div class="lbl"><i class="fa-solid fa-crosshairs"></i> Entities</div></div>
     <div class="stat-box"><div class="val" id="statFindings">0</div><div class="lbl"><i class="fa-solid fa-magnifying-glass"></i> Findings</div></div>
@@ -769,6 +958,9 @@ body::after{
   </div>
 
   <div class="grid">
+
+    <!-- SECTION: STEP 1 — CREATE -->
+    <div class="section-divider"><span class="sd-label"><span class="sd-num">1</span> Create Investigation</span></div>
 
     <!-- NEW INVESTIGATION -->
     <div class="panel" id="panelNewProject">
@@ -791,6 +983,9 @@ body::after{
         <div class="mt-1 text-center text-dim text-sm hidden" id="projectIdDisplay"></div>
       </div>
     </div>
+
+    <!-- SECTION: STEP 2 — ADD TARGETS -->
+    <div class="section-divider"><span class="sd-label"><span class="sd-num">2</span> Add Targets</span></div>
 
     <!-- TARGET ACQUISITION -->
     <div class="panel" id="panelTargets">
@@ -827,6 +1022,9 @@ body::after{
       </div>
     </div>
 
+    <!-- SECTION: STEP 3 — RUN -->
+    <div class="section-divider"><span class="sd-label"><span class="sd-num">3</span> Execute Run</span></div>
+
     <!-- EXECUTE RUN -->
     <div class="panel full-width" id="panelRun">
       <div class="panel-head">
@@ -839,6 +1037,7 @@ body::after{
         </button>
         <button class="btn btn-cyan btn-lg gated-btn" id="btnAnalyze" onclick="runAnalysis()" disabled title="Select an investigation first" style="margin-left:1rem">
           <i class="fa-solid fa-brain"></i> Run AI Analysis
+          <span style="font-size:.6rem;background:var(--amber);color:#000;padding:.1rem .4rem;border-radius:2px;margin-left:.4rem;letter-spacing:.08em">PREMIUM</span>
         </button>
         <div class="run-status" id="runStatus">
           <span class="blink">&#x2588;</span> <i class="fa-solid fa-spinner fa-spin"></i> COLLECTING INTELLIGENCE...
@@ -846,25 +1045,54 @@ body::after{
         <div class="run-status" id="analyzeStatus">
           <span class="blink">&#x2588;</span> <i class="fa-solid fa-spinner fa-spin"></i> RUNNING AI ANALYSIS...
         </div>
+
+        <!-- AI Analysis Example Preview (always visible) -->
+        <div class="ai-example-preview" id="aiExamplePreview">
+          <div class="example-label"><i class="fa-solid fa-eye"></i> Example: What AI Analysis Looks Like</div>
+          <div class="example-card">
+            <div class="ex-type"><i class="fa-solid fa-file-lines"></i> Summary</div>
+            <div class="ex-desc">Target +1-555-0142 is a VoIP line registered through Twilio, linked to 3 online identities across LinkedIn, GitHub, and a Shopify storefront. Activity cluster suggests a freelance developer persona.</div>
+          </div>
+          <div class="example-card ex-anomaly">
+            <div class="ex-type"><i class="fa-solid fa-triangle-exclamation"></i> Anomaly</div>
+            <div class="ex-desc">Phone registered in TX but social profiles list SF. Domain WHOIS shows a third address in FL. Geographic spread inconsistent with single-individual pattern.</div>
+          </div>
+          <div class="example-card ex-lead">
+            <div class="ex-type"><i class="fa-solid fa-lightbulb"></i> Investigative Lead</div>
+            <div class="ex-desc">GitHub commit emails match a breach record from 2021. Cross-reference with the Shopify store owner email for identity confirmation.</div>
+          </div>
+        </div>
+        <div class="ai-premium-gate" id="aiPremiumGate">
+          <div class="gate-title"><i class="fa-solid fa-lock"></i> AI Analysis &mdash; Premium Feature</div>
+          <div class="gate-desc">Deep pattern detection, risk scoring, entity linking, anomaly alerts, and investigative leads. Powered by local LLM &mdash; your data never leaves the server.</div>
+          <button class="btn btn-amber btn-lg" onclick="showPaywall()"><i class="fa-solid fa-bolt"></i> Unlock AI Analysis &mdash; $9.99/mo</button>
+        </div>
       </div>
     </div>
 
-    <!-- FINDINGS -->
-    <div class="panel full-width hidden" id="panelFindings">
-      <div class="panel-head">
+    <!-- SECTION: STEP 4 — RESULTS -->
+    <div class="section-divider"><span class="sd-label"><span class="sd-num">4</span> Results &amp; Analysis</span></div>
+
+    <!-- FINDINGS (collapsible, collapsed by default) -->
+    <div class="panel full-width panel-collapsible collapsed hidden" id="panelFindings">
+      <div class="panel-head" onclick="togglePanel('panelFindings')">
         <span class="dot" style="background:var(--cyan)"></span>
         <span class="label"><i class="fa-solid fa-file-shield"></i> Intelligence Findings</span>
+        <span class="collapse-badge" id="findingsCount">0</span>
+        <span class="collapse-chevron"><i class="fa-solid fa-chevron-down"></i></span>
       </div>
       <div class="panel-body">
         <div class="findings-grid" id="findingsGrid"></div>
       </div>
     </div>
 
-    <!-- ANALYSIS / PATTERNS -->
-    <div class="panel full-width hidden" id="panelPatterns">
-      <div class="panel-head">
+    <!-- ANALYSIS / PATTERNS (collapsible, collapsed by default) -->
+    <div class="panel full-width panel-collapsible collapsed hidden" id="panelPatterns">
+      <div class="panel-head" onclick="togglePanel('panelPatterns')">
         <span class="dot" style="background:var(--amber)"></span>
         <span class="label"><i class="fa-solid fa-diagram-project"></i> AI Analysis &mdash; Patterns &amp; Insights</span>
+        <span class="collapse-badge" id="patternsCount">0</span>
+        <span class="collapse-chevron"><i class="fa-solid fa-chevron-down"></i></span>
       </div>
       <div class="panel-body" id="patternsContainer"></div>
     </div>
@@ -1038,6 +1266,7 @@ function updateFreemiumUI(){
     bar.style.background = 'rgba(0,255,0,.05)';
     footerUp.innerHTML = '<span style="color:var(--green)"><i class="fa-solid fa-crown"></i> Premium Active &mdash; Unlimited Runs &amp; Full AI</span>';
     wpSection.classList.add('hidden');
+    updateAiPremiumUI();
     return;
   }
 
@@ -1055,6 +1284,7 @@ function updateFreemiumUI(){
   } else {
     prog.style.background = 'var(--green)';
   }
+  updateAiPremiumUI();
 }
 
 /* ─── PayPal / Paywall ─── */
@@ -1286,6 +1516,7 @@ async function onAuthSuccess(){
   }
   updateFreemiumUI();
   checkConsent();
+  showOnboardingIfNeeded();
   loadInvestigations();
 }
 
@@ -1321,14 +1552,21 @@ async function createProject(){
   try{
     const data=await api('POST','/projects',{name,description:desc,target_summary:desc});
     projectId=data.id;
+    sessionStorage.setItem('projectId',data.id);
     log('PROJECT CREATED: '+projectId,'info');
     document.getElementById('projectIdDisplay').textContent='Project ID: '+projectId;
     document.getElementById('projectIdDisplay').classList.remove('hidden');
+    // Show current investigation label
+    document.getElementById('currentInvLabel').classList.remove('hidden');
+    document.getElementById('currentInvName').textContent=name;
+    document.getElementById('currentInvId').textContent='['+data.id.slice(0,8)+']';
     document.getElementById('btnAddEntity').disabled=false;
     document.getElementById('btnRun').disabled=false;
     document.getElementById('btnRun').removeAttribute('title');
     document.getElementById('statsRow').classList.remove('hidden');
     btn.innerHTML='<i class="fa-solid fa-check"></i> Project Active';
+    setStep(2);
+    loadInvestigations();
   }catch(e){
     log('ERROR: '+e.message,'error');
     recordError();
@@ -1355,6 +1593,7 @@ async function addEntity(){
     document.getElementById('entityValue').value='';
     document.getElementById('entityLabel').value='';
     log('TARGET ACQUIRED: '+etype+' / '+val+' ['+data.id.slice(0,8)+']','info');
+    if(currentStep<3) setStep(3);
   }catch(e){
     log('ERROR: '+e.message,'error');
     recordError();
@@ -1405,6 +1644,7 @@ async function executeRun(){
     loadPlatformStats();
     btn.disabled=false;
     document.getElementById('btnAnalyze').disabled=false;
+    setStep(4);
   }catch(e){
     log('RUN ERROR: '+e.message,'error');
     recordError();
@@ -1458,10 +1698,13 @@ async function loadFindings(){
     document.getElementById('statSeverity').textContent=maxSev.toUpperCase();
 
     if(allFindings.length>0){
-      document.getElementById('panelFindings').classList.remove('hidden');
+      const fp=document.getElementById('panelFindings');
+      fp.classList.remove('hidden','collapsed');
+      document.getElementById('findingsCount').textContent=allFindings.length;
       renderFindings(allFindings);
       log('FINDINGS: '+allFindings.length+' intelligence items loaded','info');
       computeThreat(allFindings);
+      if(currentStep<4) setStep(4);
     }else{
       log('FINDINGS: No findings returned','warn');
       computeThreat([]);
@@ -1604,8 +1847,10 @@ async function loadPatterns(){
   try{
     const patterns=await api('GET','/projects/'+projectId+'/patterns');
     document.getElementById('statPatterns').textContent=patterns.length;
+    document.getElementById('patternsCount').textContent=patterns.length;
     if(patterns.length>0){
-      document.getElementById('panelPatterns').classList.remove('hidden');
+      const pp=document.getElementById('panelPatterns');
+      pp.classList.remove('hidden','collapsed');
       // Premium users see full patterns; free users see limited view
       if(isPremium()){
         renderPatterns(patterns);
@@ -1726,36 +1971,41 @@ async function loadInvestigations(){
     }
     document.getElementById('panelInvestigations').classList.remove('hidden');
 
-    let totalEntities=0,totalFindings=0,totalPatterns=0;
     const details=[];
     for(const p of projects){
+      // Skip archived projects
+      if(p.status==='archived') continue;
       try{
         const report=await api('GET','/projects/'+p.id+'/report');
         const ec=report.summary?report.summary.total_entities:0;
         const fc=report.summary?report.summary.total_findings:0;
         const pc=report.summary?report.summary.total_patterns:0;
-        totalEntities+=ec;totalFindings+=fc;totalPatterns+=pc;
         details.push({id:p.id,name:p.name,status:p.status,entities:ec,findings:fc,patterns:pc});
       }catch(e){
         details.push({id:p.id,name:p.name,status:p.status,entities:0,findings:0,patterns:0});
       }
     }
 
+    if(details.length===0){
+      document.getElementById('panelInvestigations').classList.add('hidden');
+      return;
+    }
+
     const body=document.getElementById('investigationsBody');
-    let html='<table class="inv-table"><thead><tr><th>Project</th><th>Status</th><th>Entities</th><th>Findings</th></tr></thead><tbody>';
+    let html='<table class="inv-table"><thead><tr><th>Project</th><th>Status</th><th>Entities</th><th>Findings</th><th></th></tr></thead><tbody>';
     details.forEach(d=>{
       const isDemo=/demo|dude/i.test(d.name);
       const sel=d.id===projectId?' selected':'';
       const demo=isDemo?' demo-highlight':'';
       html+='<tr class="'+sel+demo+'" onclick="selectProject(\''+d.id+'\',\''+esc(d.name)+'\')">';
-      html+='<td>'+esc(d.name)+'</td><td>'+esc(d.status)+'</td><td>'+d.entities+'</td><td>'+d.findings+'</td></tr>';
+      html+='<td>'+esc(d.name)+'</td><td>'+esc(d.status)+'</td><td>'+d.entities+'</td><td>'+d.findings+'</td>';
+      html+='<td><button class="btn-delete-sm" onclick="deleteProject(\''+d.id+'\',\''+esc(d.name).replace(/'/g,"\\'")+'\',event)" title="Delete investigation"><i class="fa-solid fa-trash"></i></button></td>';
+      html+='</tr>';
     });
     html+='</tbody></table>';
     body.innerHTML=html;
 
-    document.getElementById('statEntities').textContent=totalEntities;
-    document.getElementById('statFindings').textContent=totalFindings;
-    document.getElementById('statPatterns').textContent=totalPatterns;
+    // Stats row only shows current project — don't overwrite with aggregates
     document.getElementById('statsRow').classList.remove('hidden');
 
     log('LOADED: '+projects.length+' investigation(s) from server','info');
@@ -1777,6 +2027,21 @@ async function loadInvestigations(){
 }
 
 function selectProject(id,name){
+  // ─── PROJECT ISOLATION: clear everything before loading ───
+  entities=[];
+  document.getElementById('entityList').innerHTML='';
+  document.getElementById('findingsGrid').innerHTML='';
+  document.getElementById('panelFindings').classList.add('hidden','collapsed');
+  document.getElementById('findingsCount').textContent='0';
+  document.getElementById('patternsContainer').innerHTML='';
+  document.getElementById('panelPatterns').classList.add('hidden','collapsed');
+  document.getElementById('patternsCount').textContent='0';
+  document.getElementById('statEntities').textContent='0';
+  document.getElementById('statFindings').textContent='0';
+  document.getElementById('statPatterns').textContent='0';
+  document.getElementById('statSeverity').textContent='--';
+  setThreatLevel('minimal');
+
   projectId=id;
   sessionStorage.setItem('projectId',id);
   document.getElementById('btnAddEntity').disabled=false;
@@ -1790,12 +2055,21 @@ function selectProject(id,name){
   document.getElementById('btnCreateProject').disabled=true;
   log('SELECTED: '+name+' ['+id.slice(0,8)+']','system');
 
+  // Show current investigation context label
+  document.getElementById('currentInvLabel').classList.remove('hidden');
+  document.getElementById('currentInvName').textContent=name;
+  document.getElementById('currentInvId').textContent='['+id.slice(0,8)+']';
+
   document.querySelectorAll('.inv-table tr').forEach(r=>r.classList.remove('selected'));
   if(event && event.currentTarget) event.currentTarget.classList.add('selected');
+
+  // Update step indicator — project selected means at least step 2
+  setStep(2);
 
   api('GET','/projects/'+id+'/entities').then(ents=>{
     entities=ents||[];
     renderEntityList();
+    if(entities.length>0) setStep(3);
   }).catch(()=>{});
 
   loadFindings();
@@ -1836,6 +2110,130 @@ async function loadPlatformStats(){
 }
 // Load stats on page load (no auth needed)
 loadPlatformStats();
+
+/* ─── AI Premium Gate Visibility ─── */
+function updateAiPremiumUI(){
+  const gate=document.getElementById('aiPremiumGate');
+  const preview=document.getElementById('aiExamplePreview');
+  const badge=document.querySelector('#btnAnalyze span[style]');
+  if(isPremium()){
+    if(gate) gate.classList.add('hidden');
+    if(preview) preview.classList.add('hidden');
+    if(badge) badge.style.display='none';
+  }else{
+    if(gate) gate.classList.remove('hidden');
+    if(preview) preview.classList.remove('hidden');
+    if(badge) badge.style.display='';
+  }
+}
+
+/* ─── Onboarding Banner ─── */
+function showOnboardingIfNeeded(){
+  if(sessionStorage.getItem('vk_onboarding_dismissed')==='1') return;
+  document.getElementById('onboardingBanner').classList.remove('hidden');
+}
+function dismissOnboarding(){
+  sessionStorage.setItem('vk_onboarding_dismissed','1');
+  document.getElementById('onboardingBanner').classList.add('hidden');
+}
+
+/* ─── Step Indicator ─── */
+let currentStep=1;
+function setStep(step){
+  currentStep=step;
+  for(let i=1;i<=4;i++){
+    const el=document.getElementById('step'+i);
+    el.classList.remove('active','complete');
+    if(i<step) el.classList.add('complete');
+    else if(i===step) el.classList.add('active');
+  }
+  for(let i=1;i<=3;i++){
+    const conn=document.getElementById('conn'+i+'-'+(i+1));
+    conn.classList.toggle('done',i<step);
+  }
+  // Update step-num content for completed steps
+  for(let i=1;i<=4;i++){
+    const numEl=document.getElementById('step'+i).querySelector('.step-num');
+    if(i<step) numEl.innerHTML='<i class="fa-solid fa-check" style="font-size:.65rem"></i>';
+    else numEl.textContent=i;
+  }
+}
+
+/* ─── Panel Toggle (collapsible) ─── */
+function togglePanel(panelId){
+  document.getElementById(panelId).classList.toggle('collapsed');
+}
+
+/* ─── New Investigation (full UI reset) ─── */
+function newInvestigation(){
+  projectId=null;
+  entities=[];
+  sessionStorage.removeItem('projectId');
+
+  // Clear entity list
+  document.getElementById('entityList').innerHTML='';
+
+  // Clear findings
+  document.getElementById('findingsGrid').innerHTML='';
+  document.getElementById('panelFindings').classList.add('hidden','collapsed');
+  document.getElementById('findingsCount').textContent='0';
+
+  // Clear patterns
+  document.getElementById('patternsContainer').innerHTML='';
+  document.getElementById('panelPatterns').classList.add('hidden','collapsed');
+  document.getElementById('patternsCount').textContent='0';
+
+  // Reset stats
+  document.getElementById('statEntities').textContent='0';
+  document.getElementById('statFindings').textContent='0';
+  document.getElementById('statPatterns').textContent='0';
+  document.getElementById('statSeverity').textContent='--';
+
+  // Reset project creation form
+  document.getElementById('projName').value='';
+  document.getElementById('projDesc').value='';
+  document.getElementById('projectIdDisplay').classList.add('hidden');
+  document.getElementById('projectIdDisplay').textContent='';
+  const btn=document.getElementById('btnCreateProject');
+  btn.disabled=false;
+  btn.innerHTML='<i class="fa-solid fa-rocket"></i> Initialize Project';
+
+  // Reset buttons
+  document.getElementById('btnAddEntity').disabled=true;
+  document.getElementById('btnRun').disabled=true;
+  document.getElementById('btnRun').setAttribute('title','Select an investigation first');
+  document.getElementById('btnAnalyze').disabled=true;
+  document.getElementById('btnAnalyze').setAttribute('title','Select an investigation first');
+
+  // Deselect in table
+  document.querySelectorAll('.inv-table tr').forEach(r=>r.classList.remove('selected'));
+
+  // Hide current investigation label
+  document.getElementById('currentInvLabel').classList.add('hidden');
+
+  // Reset step indicator
+  setStep(1);
+
+  // Reset threat meter
+  setThreatLevel('minimal');
+
+  log('NEW INVESTIGATION: UI state cleared. Ready for new project.','system');
+}
+
+/* ─── Delete Project ─── */
+async function deleteProject(id, name, evt){
+  evt.stopPropagation();
+  if(!confirm('Delete investigation "'+name+'"? This cannot be undone.')) return;
+  try{
+    await api('DELETE','/projects/'+id);
+    log('DELETED: Investigation "'+name+'" removed','warn');
+    // If we deleted the active project, reset UI
+    if(projectId===id) newInvestigation();
+    loadInvestigations();
+  }catch(e){
+    log('DELETE ERROR: '+e.message,'error');
+  }
+}
 
 /* ─── Init ─── */
 log('VALKYRIE OSINT Intelligence Platform v2.0','system');
