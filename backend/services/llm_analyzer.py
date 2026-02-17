@@ -48,20 +48,42 @@ class LLMAnalyzer:
         }
 
     def _build_prompt(self, entities: list[Entity], findings: list[Finding]) -> str:
-        target_descriptions = []
-        for entity in entities:
-            target_descriptions.append(f"{entity.entity_type}: {entity.value}")
-        targets_str = ", ".join(target_descriptions)
+        # Cap entities shown in prompt to stay under model context window
+        MAX_ENTITIES = 8
+        MAX_FINDINGS_PER_ENTITY = 2
+        MAX_FINDINGS_TOTAL = 15
+        RAW_SNIPPET_LEN = 150
+
+        # Severity priority order for selecting most important findings
+        sev_order = {"critical": 0, "high": 1, "medium": 2, "low": 3, "info": 4, "error": 5}
+
+        # Sort all findings by severity, take top MAX_FINDINGS_TOTAL
+        sorted_findings = sorted(findings, key=lambda f: sev_order.get(f.severity, 9))
+        top_findings = sorted_findings[:MAX_FINDINGS_TOTAL]
+        top_finding_ids = {f.id for f in top_findings}
+
+        # Take top MAX_ENTITIES entities that have findings in the top set
+        entities_with_findings = [
+            e for e in entities
+            if any(f.entity_id == e.id for f in top_findings)
+        ][:MAX_ENTITIES]
+
+        target_descriptions = [f"{e.entity_type}: {e.value}" for e in entities_with_findings]
+        targets_str = ", ".join(target_descriptions) if target_descriptions else "multiple targets"
+
+        if len(entities) > MAX_ENTITIES:
+            targets_str += f" (+ {len(entities) - MAX_ENTITIES} more entities, showing top {MAX_ENTITIES} by finding severity)"
 
         data_sections = []
-        for entity in entities:
-            entity_findings = [f for f in findings if f.entity_id == entity.id]
+        for entity in entities_with_findings:
+            entity_findings = [f for f in top_findings if f.entity_id == entity.id]
+            entity_findings = entity_findings[:MAX_FINDINGS_PER_ENTITY]
             if not entity_findings:
                 continue
 
             findings_text = []
             for f in entity_findings:
-                raw_snippet = json.dumps(f.raw_data, default=str)[:800] if f.raw_data else "N/A"
+                raw_snippet = json.dumps(f.raw_data, default=str)[:RAW_SNIPPET_LEN] if f.raw_data else "N/A"
                 findings_text.append(
                     f"  - Tool: {f.tool_name} | Severity: {f.severity}\n"
                     f"    Summary: {f.summary or 'N/A'}\n"
@@ -74,22 +96,31 @@ class LLMAnalyzer:
                 + "\n".join(findings_text)
             )
 
+        total_findings = len(findings)
+        shown_findings = len(top_findings)
+        scope_note = (
+            f"(Showing top {shown_findings} of {total_findings} total findings by severity)"
+            if total_findings > shown_findings else f"({total_findings} total findings)"
+        )
+
         prompt = (
             f"You are a senior OSINT intelligence analyst. Analyze these OSINT findings "
-            f"for targets [{targets_str}].\n\n"
+            f"for targets [{targets_str}]. {scope_note}\n\n"
             "Detect patterns, risks, entity links, and threat indicators.\n\n"
-            "Produce your response as a JSON object with exactly these keys:\n"
-            '- "risk_score": one of "low", "medium", "high", or "critical"\n'
-            '- "summary": a detailed paragraph summarizing all findings and their significance\n'
-            '- "relationships": entity links and connections discovered between targets or data points\n'
-            '- "anomalies": suspicious patterns, inconsistencies, or red flags\n'
-            '- "leads": recommended next steps for further investigation\n'
-            '- "recommendations": actionable security or investigative recommendations\n\n'
-            "Be specific. Reference actual data from the findings. Do not fabricate information.\n\n"
+            "Respond with ONLY a JSON object containing exactly these keys:\n"
+            '{\n'
+            '  "risk_score": "low"|"medium"|"high"|"critical",\n'
+            '  "summary": "detailed paragraph summarizing all findings",\n'
+            '  "relationships": "entity links and connections found",\n'
+            '  "anomalies": "suspicious patterns or red flags",\n'
+            '  "leads": "recommended next investigation steps",\n'
+            '  "recommendations": "actionable security recommendations"\n'
+            '}\n\n'
+            "Be specific. Reference actual data. Do not fabricate.\n\n"
             "=== INTELLIGENCE DATA ===\n\n"
             + "\n\n".join(data_sections)
             + "\n\n=== END DATA ===\n\n"
-            "Respond with ONLY the JSON object, no markdown formatting."
+            "Respond with ONLY the JSON object. No markdown, no explanation."
         )
         return prompt
 
@@ -101,7 +132,8 @@ class LLMAnalyzer:
             "stream": False,
             "options": {
                 "temperature": 0.3,
-                "num_predict": 2048,
+                "num_predict": 1024,
+                "num_ctx": 8192,  # Override default 4096 context to prevent prompt truncation
             },
         }
 
@@ -161,9 +193,10 @@ class LLMAnalyzer:
             self.db.add(risk_pattern)
             patterns.append(risk_pattern)
 
-        # Standard pattern types
+        # Standard pattern types — only use fallback raw text if JSON fully failed
+        fallback_summary = llm_response[:800] if not parsed and llm_response.startswith(("{", "[")) else ""
         pattern_mapping = {
-            "summary": parsed.get("summary", llm_response[:1500] if not parsed else ""),
+            "summary": parsed.get("summary", fallback_summary),
             "relationship": parsed.get("relationships", ""),
             "anomaly": parsed.get("anomalies", ""),
             "lead": parsed.get("leads", ""),
