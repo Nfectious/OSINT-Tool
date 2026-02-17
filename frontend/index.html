@@ -218,11 +218,13 @@ body::after{
 .pattern-card.type-relationship{border-left-color:var(--amber)}
 .pattern-card.type-anomaly{border-left-color:var(--red)}
 .pattern-card.type-lead{border-left-color:var(--green)}
+.pattern-card.type-recommendation{border-left-color:#a855f7}
 .pattern-type{font-size:.7rem;letter-spacing:.15em;text-transform:uppercase;margin-bottom:.4rem}
 .type-summary .pattern-type{color:var(--cyan)}
 .type-relationship .pattern-type{color:var(--amber)}
 .type-anomaly .pattern-type{color:var(--red)}
 .type-lead .pattern-type{color:var(--green)}
+.type-recommendation .pattern-type{color:#a855f7}
 .pattern-desc{font-size:.875rem;line-height:1.6;color:var(--text)}
 .pattern-conf{font-size:.7rem;color:var(--text-dim);margin-top:.4rem}
 
@@ -925,6 +927,24 @@ body::after{
     </label>
   </div>
 
+  <!-- WHAT IS VALKYRIE? (collapsible) -->
+  <div class="why-premium" id="whatIsValkyrie">
+    <button class="why-premium-toggle" onclick="document.getElementById('whatIsValkyrie').classList.toggle('open')" style="color:var(--cyan);background:rgba(6,182,212,.06)">
+      <span><i class="fa-solid fa-circle-info" style="margin-right:.5rem"></i> What is VALKYRIE?</span>
+      <span class="chevron"><i class="fa-solid fa-chevron-down"></i></span>
+    </button>
+    <div class="why-premium-body">
+      <div class="why-premium-inner" style="font-size:.875rem;line-height:1.8;color:var(--text-dim)">
+        <p style="margin-bottom:.75rem"><strong style="color:var(--green)">VALKYRIE OSINT</strong> is an ethical public intelligence tool for looking up phones, emails, usernames, IPs, and domains.</p>
+        <ul style="margin-bottom:.5rem">
+          <li><span class="check"><i class="fa-solid fa-gift"></i></span> <strong style="color:var(--text)">Free tier:</strong> 5 runs/day, basic carrier lookup + short AI summary</li>
+          <li><span class="check"><i class="fa-solid fa-crown" style="color:var(--amber)"></i></span> <strong style="color:var(--text)">Premium ($9.99/mo):</strong> Unlimited runs, full AI patterns/risks, downloadable reports</li>
+          <li><span class="check"><i class="fa-solid fa-file-shield" style="color:var(--cyan)"></i></span> <strong style="color:var(--text)">Pay-per-report ($4.99):</strong> Buy a full AI analysis one-time for any investigation</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
   <!-- WHY PREMIUM? (collapsible) -->
   <div class="why-premium" id="whyPremium">
     <button class="why-premium-toggle" onclick="toggleWhyPremium()">
@@ -1344,13 +1364,12 @@ function incrementRunCount(){
   return count;
 }
 function isAdmin(){
-  return currentUser && (
-    currentUser.tier === 'admin' ||
-    (currentUser.email && currentUser.email === 'tcmherd@proton.me')
-  );
+  return currentUser && currentUser.email === 'tcmherd@proton.me';
 }
 function isPremium(){
   if(isAdmin()) return true;
+  // Only premium if server tier says so OR PayPal subscription confirmed in this session
+  if(currentUser && currentUser.tier === 'premium') return true;
   return localStorage.getItem('vk_isPremium') === 'true';
 }
 function canRun(){
@@ -1681,13 +1700,14 @@ async function onAuthSuccess(){
   document.getElementById('dossierTier').textContent=currentUser.tier.toUpperCase();
   document.getElementById('dossierSession').textContent=authToken?authToken.slice(-12).toUpperCase():'----';
   document.getElementById('dossierLogin').textContent=new Date().toLocaleString();
-  // Check if user tier indicates premium from server
-  if(currentUser.tier === 'premium' || currentUser.tier === 'admin'){
+  // Clear stale premium flag — only set if server confirms premium tier
+  if(currentUser.tier === 'premium'){
     localStorage.setItem('vk_isPremium', 'true');
+  } else if(!isAdmin()){
+    localStorage.removeItem('vk_isPremium');
   }
   // Admin unlimited access
   if(isAdmin()){
-    localStorage.setItem('vk_isPremium', 'true');
     document.getElementById('userTier').textContent='ADMIN';
     document.getElementById('userTier').style.background='rgba(255,0,0,.15)';
     document.getElementById('userTier').style.color='var(--red)';
@@ -1999,6 +2019,9 @@ async function runAnalysis(){
   log('ANALYSIS: Initiating AI pattern analysis...','warn');
   recordAnalysis();
 
+  // AI runs consume daily quota for free users
+  if(!isPremium()) incrementRunCount();
+
   try{
     const data=await api('POST','/projects/'+projectId+'/analyze',null,true);
     log('ANALYSIS COMPLETE: '+data.patterns_created+' patterns identified','info');
@@ -2016,10 +2039,16 @@ async function runAnalysis(){
     if(!isPremium() && !isReportUnlocked(projectId)){
       const patterns=await api('GET','/projects/'+projectId+'/patterns');
       let basicSummary = 'Analysis identified ' + data.patterns_created + ' pattern(s). ';
+      const riskP = patterns.find(p => p.pattern_type === 'risk_score');
+      if(riskP) basicSummary = 'Risk Score: ' + riskP.description.toUpperCase() + '. ';
       if(patterns.length > 0){
-        const summaryPattern = patterns.find(p => p.pattern_type === 'summary') || patterns[0];
-        const desc = summaryPattern.description || '';
-        basicSummary += desc.length > 120 ? desc.slice(0, 120) + '...' : desc;
+        const summaryPattern = patterns.find(p => p.pattern_type === 'summary');
+        if(summaryPattern){
+          const desc = summaryPattern.description || '';
+          basicSummary += desc.length > 200 ? desc.slice(0, 200) + '...' : desc;
+        } else {
+          basicSummary += data.patterns_created + ' pattern(s) detected.';
+        }
       } else {
         basicSummary += 'No actionable patterns detected at this depth.';
       }
@@ -2058,12 +2087,31 @@ async function loadPatterns(){
 function renderPatterns(patterns){
   const container=document.getElementById('patternsContainer');
   container.innerHTML='';
-  const typeOrder=['summary','relationship','anomaly','lead'];
-  patterns.sort((a,b)=>(typeOrder.indexOf(a.pattern_type)||0)-(typeOrder.indexOf(b.pattern_type)||0));
-  patterns.forEach(p=>{
+
+  // Render risk score badge first if present
+  const riskPattern=patterns.find(p=>p.pattern_type==='risk_score');
+  if(riskPattern){
+    const score=riskPattern.description||'unknown';
+    const colorMap={low:'var(--green)',medium:'var(--amber)',high:'var(--red)',critical:'#ff0066'};
+    const bgMap={low:'rgba(0,255,0,.08)',medium:'rgba(245,158,11,.08)',high:'rgba(255,0,0,.08)',critical:'rgba(255,0,102,.12)'};
+    const badge=document.createElement('div');
+    badge.style.cssText='text-align:center;padding:1rem;margin-bottom:1rem;border:2px solid '+(colorMap[score]||'var(--text-dim)')+';border-radius:4px;background:'+(bgMap[score]||'transparent');
+    badge.innerHTML='<div style="font-size:.7rem;letter-spacing:.2em;text-transform:uppercase;color:var(--text-dim);margin-bottom:.3rem"><i class="fa-solid fa-shield-halved"></i> AI RISK ASSESSMENT</div>'
+      +'<div style="font-size:1.75rem;font-weight:bold;color:'+(colorMap[score]||'var(--text)')+';letter-spacing:.15em;text-transform:uppercase;text-shadow:0 0 20px '+(colorMap[score]||'transparent')+'">'+esc(score)+'</div>'
+      +'<div style="font-size:.7rem;color:var(--text-dim);margin-top:.3rem">Model: '+esc(riskPattern.llm_model||'--')+' &middot; Confidence: '+Math.round((riskPattern.confidence||0)*100)+'%</div>';
+    container.appendChild(badge);
+  }
+
+  const typeOrder=['summary','relationship','anomaly','lead','recommendation'];
+  const displayPatterns=patterns.filter(p=>p.pattern_type!=='risk_score');
+  displayPatterns.sort((a,b)=>{
+    const ai=typeOrder.indexOf(a.pattern_type),bi=typeOrder.indexOf(b.pattern_type);
+    return (ai===-1?99:ai)-(bi===-1?99:bi);
+  });
+  displayPatterns.forEach(p=>{
     const card=document.createElement('div');
     card.className='pattern-card type-'+(p.pattern_type||'summary');
-    const iconMap={summary:'fa-file-lines',relationship:'fa-link',anomaly:'fa-triangle-exclamation',lead:'fa-lightbulb'};
+    const iconMap={summary:'fa-file-lines',relationship:'fa-link',anomaly:'fa-triangle-exclamation',lead:'fa-lightbulb',recommendation:'fa-clipboard-check'};
     const icon=iconMap[p.pattern_type]||'fa-circle-info';
     card.innerHTML='<div class="pattern-type"><i class="fa-solid '+icon+'"></i> '+esc(p.pattern_type||'insight')+'</div>'
       +'<div class="pattern-desc">'+esc(p.description||'No description')+'</div>'
@@ -2076,14 +2124,33 @@ function renderPatterns(patterns){
 function renderPatternsLimited(patterns){
   const container=document.getElementById('patternsContainer');
   container.innerHTML='';
+
+  // Show risk score badge for free users (visible but teased)
+  const riskPattern=patterns.find(p=>p.pattern_type==='risk_score');
+  if(riskPattern){
+    const score=riskPattern.description||'unknown';
+    const colorMap={low:'var(--green)',medium:'var(--amber)',high:'var(--red)',critical:'#ff0066'};
+    const bgMap={low:'rgba(0,255,0,.08)',medium:'rgba(245,158,11,.08)',high:'rgba(255,0,0,.08)',critical:'rgba(255,0,102,.12)'};
+    const badge=document.createElement('div');
+    badge.style.cssText='text-align:center;padding:1rem;margin-bottom:1rem;border:2px solid '+(colorMap[score]||'var(--text-dim)')+';border-radius:4px;background:'+(bgMap[score]||'transparent');
+    badge.innerHTML='<div style="font-size:.7rem;letter-spacing:.2em;text-transform:uppercase;color:var(--text-dim);margin-bottom:.3rem"><i class="fa-solid fa-shield-halved"></i> AI RISK ASSESSMENT</div>'
+      +'<div style="font-size:1.75rem;font-weight:bold;color:'+(colorMap[score]||'var(--text)')+';letter-spacing:.15em;text-transform:uppercase;text-shadow:0 0 20px '+(colorMap[score]||'transparent')+'">'+esc(score)+'</div>'
+      +'<div style="font-size:.65rem;color:var(--text-muted);margin-top:.3rem"><i class="fa-solid fa-lock"></i> Full risk breakdown available in Premium</div>';
+    container.appendChild(badge);
+  }
+
   // Show only summary types for free users, blur the rest
-  const typeOrder=['summary','relationship','anomaly','lead'];
-  patterns.sort((a,b)=>(typeOrder.indexOf(a.pattern_type)||0)-(typeOrder.indexOf(b.pattern_type)||0));
+  const typeOrder=['summary','relationship','anomaly','lead','recommendation'];
+  const displayPatterns=patterns.filter(p=>p.pattern_type!=='risk_score');
+  displayPatterns.sort((a,b)=>{
+    const ai=typeOrder.indexOf(a.pattern_type),bi=typeOrder.indexOf(b.pattern_type);
+    return (ai===-1?99:ai)-(bi===-1?99:bi);
+  });
   let shown = 0;
-  patterns.forEach(p=>{
+  displayPatterns.forEach(p=>{
     const card=document.createElement('div');
     card.className='pattern-card type-'+(p.pattern_type||'summary');
-    const iconMap={summary:'fa-file-lines',relationship:'fa-link',anomaly:'fa-triangle-exclamation',lead:'fa-lightbulb'};
+    const iconMap={summary:'fa-file-lines',relationship:'fa-link',anomaly:'fa-triangle-exclamation',lead:'fa-lightbulb',recommendation:'fa-clipboard-check'};
     const icon=iconMap[p.pattern_type]||'fa-circle-info';
 
     if(p.pattern_type === 'summary' && shown < 1){
