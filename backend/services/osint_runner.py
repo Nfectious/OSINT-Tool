@@ -19,33 +19,46 @@ class OSINTRunner:
         self.cross_ref = CrossRefDetector(db)
 
     def run_project(self, project_id: str) -> dict:
-        entities = self.db.query(Entity).filter(Entity.project_id == project_id).all()
-        if not entities:
+        all_entities = self.db.query(Entity).filter(Entity.project_id == project_id).all()
+        if not all_entities:
             return {
                 "entities_processed": 0,
                 "findings_created": 0,
                 "message": "No entities found in project",
             }
 
+        # Only process entities that haven't completed yet — skip already-complete ones
+        # so that adding a new target and re-running doesn't duplicate existing findings.
+        pending = [e for e in all_entities if e.status not in ("complete",)]
+        skipped = len(all_entities) - len(pending)
+
         total_findings = 0
-        for entity in entities:
+        for entity in pending:
             result = self._run_single_entity(entity)
             total_findings += result["findings_created"]
 
         tier_note = "premium tools included" if self.is_premium else "upgrade to premium for enriched results"
+        skip_note = f", {skipped} already-complete target(s) skipped" if skipped else ""
         return {
-            "entities_processed": len(entities),
+            "entities_processed": len(pending),
             "findings_created": total_findings,
             "message": (
-                f"Processed {len(entities)} entities, created {total_findings} findings "
-                f"({tier_note})"
+                f"Processed {len(pending)} entities, created {total_findings} findings"
+                f"{skip_note} ({tier_note})"
             ),
         }
 
     def run_entity(self, entity_id: str) -> dict:
+        """Re-run a single entity — clears existing findings first for a clean refresh."""
         entity = self.db.query(Entity).filter(Entity.id == entity_id).first()
         if not entity:
             return {"findings_created": 0, "message": "Entity not found"}
+
+        # Wipe old findings so re-run produces a clean, non-duplicated result
+        self.db.query(Finding).filter(Finding.entity_id == entity_id).delete()
+        entity.status = "pending"
+        self.db.commit()
+
         return self._run_single_entity(entity)
 
     def _run_single_entity(self, entity: Entity) -> dict:
