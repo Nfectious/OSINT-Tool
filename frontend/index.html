@@ -2098,7 +2098,7 @@ async function runAnalysis(){
   const btn=document.getElementById('btnAnalyze');
   btn.disabled=true;
   document.getElementById('analyzeStatus').classList.add('active');
-  log('ANALYSIS: Initiating AI pattern analysis (llama3.2:3b via Ollama)...','warn');
+  log('ANALYSIS: Initiating AI pattern analysis (qwen2.5:7b via Ollama)...','warn');
   recordAnalysis();
 
   // AI runs consume daily quota for free users (not admin)
