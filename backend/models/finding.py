@@ -20,6 +20,8 @@ class Finding(Base):
     summary: Mapped[str | None] = mapped_column(Text, nullable=True)
     severity: Mapped[str] = mapped_column(String(20), default="info")
     tags: Mapped[dict | None] = mapped_column(JSON, nullable=True)  # stored as JSON list
+    # Cross-references: list of {entity_id, entity_type, entity_value, project_id, project_name, match_reason}
+    links: Mapped[list | None] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=lambda: datetime.now(timezone.utc)
     )

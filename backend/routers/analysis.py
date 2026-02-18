@@ -39,6 +39,53 @@ def list_patterns(project_id: str, db: Session = Depends(get_db)):
     return db.query(Pattern).filter(Pattern.project_id == project_id).all()
 
 
+@router.get("/projects/{project_id}/cross-refs")
+def get_cross_refs(project_id: str, db: Session = Depends(get_db)):
+    """Return all cross-reference links for a project (deduplicated by linked entity)."""
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    entities = db.query(Entity).filter(Entity.project_id == project_id).all()
+    entity_ids = [e.id for e in entities]
+
+    # Build a map: entity_id → entity info for quick lookup
+    entity_map = {e.id: e for e in entities}
+
+    # Collect all findings with links
+    findings_with_links = (
+        db.query(Finding)
+        .filter(Finding.entity_id.in_(entity_ids), Finding.links.isnot(None))
+        .all()
+    ) if entity_ids else []
+
+    # Deduplicate linked entities and track which source entities reference them
+    linked: dict[str, dict] = {}  # linked_entity_id → link info
+    for finding in findings_with_links:
+        source_entity = entity_map.get(finding.entity_id)
+        for link in (finding.links or []):
+            lid = link.get("entity_id")
+            if not lid:
+                continue
+            if lid not in linked:
+                linked[lid] = {
+                    **link,
+                    "referenced_by": [],
+                }
+            src_label = (
+                f"{source_entity.entity_type}:{source_entity.value}"
+                if source_entity else finding.entity_id
+            )
+            if src_label not in linked[lid]["referenced_by"]:
+                linked[lid]["referenced_by"].append(src_label)
+
+    return {
+        "project_id": project_id,
+        "total_links": len(linked),
+        "links": list(linked.values()),
+    }
+
+
 @router.get("/projects/{project_id}/summary")
 def get_project_summary(project_id: str, db: Session = Depends(get_db)):
     project = db.query(Project).filter(Project.id == project_id).first()

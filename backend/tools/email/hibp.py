@@ -9,6 +9,8 @@ logger = logging.getLogger(__name__)
 class HIBPTool(BaseTool):
     """Checks if an email has been in data breaches using Have I Been Pwned."""
 
+    premium_only = True
+
     @property
     def name(self) -> str:
         return "HaveIBeenPwned"

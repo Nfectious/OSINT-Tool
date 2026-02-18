@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
-from database import create_all_tables
+from database import create_all_tables, run_migrations
 from rate_limit import limiter
 from routers.auth import router as auth_router
 from routers.projects import router as projects_router
@@ -25,6 +25,7 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     logger.info("Starting Valkyrie OSINT Operating System...")
     create_all_tables()
+    run_migrations()
     logger.info("Database tables created/verified.")
     yield
     logger.info("Shutting down Valkyrie OSINT Operating System.")

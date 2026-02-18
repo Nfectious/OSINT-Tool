@@ -21,6 +21,7 @@ class FindingResponse(BaseModel):
     summary: Optional[str]
     severity: str
     tags: Optional[list]
+    links: Optional[list] = None
     created_at: datetime
 
     model_config = {"from_attributes": True}
@@ -33,6 +34,7 @@ class FindingBriefResponse(BaseModel):
     tool_category: str
     summary: Optional[str]
     severity: str
+    links: Optional[list] = None
     created_at: datetime
 
     model_config = {"from_attributes": True}

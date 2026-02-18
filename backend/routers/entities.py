@@ -5,9 +5,13 @@ from typing import Optional
 from datetime import datetime
 
 from database import get_db
+from auth import get_current_user
 from models.project import Project
 from models.entity import Entity
 from models.finding import Finding
+from models.user import User
+
+_ADMIN_EMAIL = "tcmherd@proton.me"
 
 router = APIRouter(prefix="/projects/{project_id}/entities", tags=["entities"])
 
@@ -118,7 +122,12 @@ def delete_entity(project_id: str, entity_id: str, db: Session = Depends(get_db)
 
 
 @router.post("/{entity_id}/run", response_model=RunEntityResponse)
-def run_entity(project_id: str, entity_id: str, db: Session = Depends(get_db)):
+def run_entity(
+    project_id: str,
+    entity_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     entity = (
         db.query(Entity)
         .filter(Entity.id == entity_id, Entity.project_id == project_id)
@@ -127,8 +136,13 @@ def run_entity(project_id: str, entity_id: str, db: Session = Depends(get_db)):
     if not entity:
         raise HTTPException(status_code=404, detail="Entity not found")
 
+    is_premium = (
+        current_user.tier in ("pro", "enterprise")
+        or current_user.email == _ADMIN_EMAIL
+    )
+
     from services.osint_runner import OSINTRunner
-    runner = OSINTRunner(db)
+    runner = OSINTRunner(db, is_premium=is_premium)
     result = runner.run_entity(entity_id)
     return RunEntityResponse(
         entity_id=entity_id,

@@ -223,6 +223,60 @@ body::after{
   display:inline-block;padding:.15rem .45rem;margin:.1rem;border-radius:2px;
   background:rgba(6,182,212,.1);color:var(--cyan);border:1px solid rgba(6,182,212,.2);
 }
+.premium-badge{
+  display:inline-block;font-size:.6rem;letter-spacing:.08em;padding:.1rem .4rem;
+  border-radius:2px;background:rgba(234,179,8,.15);color:#eab308;
+  border:1px solid rgba(234,179,8,.3);text-transform:uppercase;margin-left:.4rem;vertical-align:middle;
+}
+.finding-detail-box{
+  margin-top:.6rem;padding:.6rem;background:rgba(6,182,212,.05);
+  border:1px solid rgba(6,182,212,.12);border-radius:4px;font-size:.82rem;line-height:1.8;
+}
+.finding-detail-box .detail-title{
+  font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--cyan);margin-bottom:.3rem;
+}
+.profile-link{
+  display:inline-block;padding:.15rem .45rem;margin:.1rem;border-radius:2px;
+  background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.2);color:#22c55e;
+  font-size:.75rem;text-decoration:none;
+}
+.profile-link:hover{background:rgba(34,197,94,.2)}
+.flag-badge{
+  display:inline-block;padding:.1rem .35rem;border-radius:2px;font-size:.7rem;
+  background:rgba(249,115,22,.15);color:#f97316;border:1px solid rgba(249,115,22,.3);margin:.1rem;
+}
+/* Cross-referencing */
+.cross-ref-section{
+  margin-top:.7rem;padding:.6rem;
+  background:rgba(168,85,247,.05);border:1px solid rgba(168,85,247,.2);border-radius:4px;
+}
+.cross-ref-header{
+  font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:#a855f7;
+  margin-bottom:.4rem;display:flex;align-items:center;gap:.4rem;
+}
+.cross-ref-badge{
+  display:inline-flex;align-items:center;gap:.3rem;
+  font-size:.65rem;padding:.15rem .45rem;border-radius:10px;
+  background:rgba(168,85,247,.15);color:#a855f7;border:1px solid rgba(168,85,247,.3);
+  font-weight:bold;
+}
+.cross-ref-item{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:.3rem .4rem;margin:.2rem 0;border-radius:3px;font-size:.78rem;
+  background:rgba(168,85,247,.04);border:1px solid rgba(168,85,247,.1);
+}
+.cross-ref-item .xref-meta{color:var(--text-dim);font-size:.72rem;}
+.cross-ref-item .btn-xref{
+  font-size:.65rem;padding:.2rem .45rem;border:1px solid rgba(168,85,247,.35);
+  background:transparent;color:#a855f7;border-radius:2px;cursor:pointer;white-space:nowrap;
+}
+.cross-ref-item .btn-xref:hover{background:rgba(168,85,247,.15);}
+/* Cross-ref count badge in investigation table */
+.xref-count-badge{
+  display:inline-flex;align-items:center;gap:.25rem;
+  font-size:.65rem;padding:.1rem .35rem;border-radius:10px;
+  background:rgba(168,85,247,.15);color:#a855f7;border:1px solid rgba(168,85,247,.3);
+}
 
 /* Patterns / Analysis */
 .pattern-card{
@@ -2011,7 +2065,9 @@ function renderFindings(findings){
     const card=document.createElement('div');
     card.className='finding-card sev-'+(f.severity||'info');
 
-    let html='<div class="finding-tool"><i class="fa-solid fa-wrench"></i> '+esc(f.tool_name||'Unknown Tool')+'</div>';
+    const _PREMIUM_TOOLS=['IP-Geo','DomainRep','EmailRep','NameOSINT','HaveIBeenPwned'];
+    const isPremiumTool=_PREMIUM_TOOLS.some(t=>new RegExp(t,'i').test(f.tool_name||''));
+    let html='<div class="finding-tool"><i class="fa-solid fa-wrench"></i> '+esc(f.tool_name||'Unknown Tool')+(isPremiumTool?'<span class="premium-badge"><i class="fa-solid fa-star"></i> premium</span>':'')+'</div>';
     html+='<div class="finding-severity">'+(f.severity||'info')+'</div>';
     html+='<div class="finding-summary">'+esc(f.summary||'No summary available')+'</div>';
     html+='<div class="finding-entity"><i class="fa-solid fa-crosshairs"></i> '+esc(f._entity_type)+' : '+esc(f._entity_value)+'</div>';
@@ -2076,6 +2132,139 @@ function renderFindings(findings){
         nv+='</div>';
         html+=nv;
       }
+    }
+
+    // IP-Geo enhanced rendering
+    if(/ip.?geo/i.test(f.tool_name) && raw.city){
+      let ig='<div class="finding-detail-box">';
+      ig+='<div class="detail-title"><i class="fa-solid fa-globe"></i> Geolocation &amp; Network Intel</div>';
+      if(raw.city)      ig+='<div><strong>Location:</strong> '+esc([raw.city,raw.region,raw.country].filter(Boolean).join(', '))+'</div>';
+      if(raw.timezone)  ig+='<div><strong>Timezone:</strong> '+esc(raw.timezone)+'</div>';
+      if(raw.isp)       ig+='<div><strong>ISP:</strong> '+esc(raw.isp)+'</div>';
+      if(raw.org)       ig+='<div><strong>Org:</strong> '+esc(raw.org)+'</div>';
+      if(raw.asn)       ig+='<div><strong>ASN:</strong> '+esc(raw.asn)+'</div>';
+      if(raw.asname)    ig+='<div><strong>AS Name:</strong> '+esc(raw.asname)+'</div>';
+      if(raw.reverse_dns) ig+='<div><strong>Reverse DNS:</strong> '+esc(raw.reverse_dns)+'</div>';
+      const flags=[];
+      if(raw.proxy)   flags.push('Proxy/VPN');
+      if(raw.hosting) flags.push('Datacenter');
+      if(raw.mobile)  flags.push('Mobile');
+      if(flags.length) ig+='<div style="margin-top:.3rem">'+flags.map(f=>'<span class="flag-badge">'+esc(f)+'</span>').join('')+'</div>';
+      ig+='</div>';
+      if(raw.lat&&raw.lon){
+        const mUrl='https://www.google.com/maps?q='+encodeURIComponent(raw.lat+','+raw.lon);
+        ig+='<div class="finding-actions"><a class="btn btn-amber" href="'+esc(mUrl)+'" target="_blank" rel="noopener"><i class="fa-solid fa-map-pin"></i> View on Map</a></div>';
+      }
+      html+=ig;
+    }
+
+    // EmailRep enhanced rendering
+    if(/emailrep/i.test(f.tool_name) && raw.reputation!==undefined){
+      let er='<div class="finding-detail-box">';
+      er+='<div class="detail-title"><i class="fa-solid fa-shield-halved"></i> Email Reputation Detail</div>';
+      const repColor=raw.reputation==='high'?'#22c55e':raw.reputation==='medium'?'#eab308':'#f97316';
+      er+='<div><strong>Reputation:</strong> <span style="color:'+repColor+'">'+esc(raw.reputation||'unknown')+'</span></div>';
+      if(raw.references!==undefined) er+='<div><strong>Web References:</strong> '+esc(raw.references)+'</div>';
+      if(raw.last_seen) er+='<div><strong>Last Seen:</strong> '+esc(raw.last_seen)+'</div>';
+      if(raw.domain_reputation) er+='<div><strong>Domain Rep:</strong> '+esc(raw.domain_reputation)+'</div>';
+      const alerts=[];
+      if(raw.data_breach)         alerts.push('Data Breach');
+      if(raw.credentials_leaked)  alerts.push('Credentials Leaked');
+      if(raw.malicious_activity)  alerts.push('Malicious Activity');
+      if(raw.blacklisted)         alerts.push('Blacklisted');
+      if(raw.spam)                alerts.push('Spam');
+      if(raw.disposable)          alerts.push('Disposable');
+      if(alerts.length) er+='<div style="margin-top:.3rem">'+alerts.map(a=>'<span class="flag-badge">'+esc(a)+'</span>').join('')+'</div>';
+      if(raw.profiles&&raw.profiles.length){
+        er+='<div style="margin-top:.4rem"><strong>Associated Profiles:</strong><br>';
+        er+=raw.profiles.map(p=>'<span class="platforms-list"><span>'+esc(p)+'</span></span>').join('');
+        er+='</div>';
+      }
+      er+='</div>';
+      html+=er;
+    }
+
+    // DomainRep enhanced rendering
+    if(/domainrep/i.test(f.tool_name)){
+      const dnsbl=raw.dnsbl||{};
+      const urlscan=raw.urlscan||{};
+      let dr='<div class="finding-detail-box">';
+      dr+='<div class="detail-title"><i class="fa-solid fa-shield-virus"></i> Domain Reputation Detail</div>';
+      const listed=dnsbl.listed_on||[];
+      dr+='<div><strong>DNSBL Lists:</strong> '+(listed.length?'<span style="color:#f97316">'+esc(listed.length)+' blacklist(s)</span>':'<span style="color:#22c55e">Clean</span>')+'</div>';
+      if(listed.length) dr+='<div>'+listed.map(l=>'<span class="flag-badge">'+esc(l)+'</span>').join('')+'</div>';
+      if(urlscan.total_historical_scans!==undefined){
+        dr+='<div><strong>URLScan History:</strong> '+esc(urlscan.total_historical_scans)+' scan(s) on record</div>';
+        if(urlscan.malicious_count) dr+='<div><strong>Malicious Verdicts:</strong> <span style="color:#f97316">'+esc(urlscan.malicious_count)+'</span></div>';
+        if(urlscan.recent_scans&&urlscan.recent_scans.length){
+          const ms=urlscan.recent_scans.filter(s=>s.malicious);
+          if(ms.length){
+            dr+='<div style="margin-top:.3rem"><strong>Malicious URLs:</strong><br>';
+            ms.slice(0,3).forEach(s=>{ dr+='<div style="font-size:.75rem;color:#f97316;word-break:break-all">'+esc(s.url)+'</div>'; });
+            dr+='</div>';
+          }
+        }
+      }
+      dr+='</div>';
+      html+=dr;
+    }
+
+    // NameOSINT enhanced rendering
+    if(/nameosint/i.test(f.tool_name)){
+      const profiles=raw.probable_profiles||[];
+      let no='<div class="finding-detail-box">';
+      no+='<div class="detail-title"><i class="fa-solid fa-user-magnifying-glass"></i> Social Presence Probe</div>';
+      if(raw.username_variants&&raw.username_variants.length){
+        no+='<div><strong>Username Variants Tested:</strong> '+raw.username_variants.slice(0,6).map(v=>'<code style="font-size:.75rem">'+esc(v)+'</code>').join(', ')+'</div>';
+      }
+      if(profiles.length){
+        no+='<div style="margin-top:.4rem"><strong>Probable Profiles ('+profiles.length+'):</strong></div>';
+        no+='<div style="margin-top:.3rem">';
+        profiles.forEach(p=>{
+          no+='<a class="profile-link" href="'+esc(p.url)+'" target="_blank" rel="noopener"><i class="fa-solid fa-arrow-up-right-from-square"></i> '+esc(p.platform)+' / '+esc(p.username)+'</a>';
+        });
+        no+='</div>';
+      }else{
+        no+='<div style="color:var(--text-dim);font-size:.8rem;margin-top:.3rem">No obvious profiles found. Manual verification recommended.</div>';
+      }
+      no+='</div>';
+      html+=no;
+    }
+
+    // HaveIBeenPwned enhanced rendering (already has breach_names block above, add count)
+    if(/haveibeenpwned/i.test(f.tool_name)&&raw.breach_count!==undefined&&raw.breach_count>0){
+      let hb='<div class="finding-detail-box">';
+      hb+='<div class="detail-title"><i class="fa-solid fa-database"></i> Breach Summary</div>';
+      hb+='<div><strong>Breaches:</strong> <span style="color:#f97316">'+esc(raw.breach_count)+'</span></div>';
+      if(raw.total_records_exposed) hb+='<div><strong>Records Exposed:</strong> '+esc(raw.total_records_exposed.toLocaleString())+'</div>';
+      if(raw.data_classes&&raw.data_classes.length){
+        hb+='<div><strong>Data Types:</strong> '+raw.data_classes.slice(0,8).map(d=>'<span class="flag-badge">'+esc(d)+'</span>').join('')+'</div>';
+      }
+      hb+='</div>';
+      html+=hb;
+    }
+
+    // Cross-references section
+    const links=f.links||[];
+    if(links.length>0){
+      // Deduplicate by entity_id
+      const seen=new Set();
+      const uniq=links.filter(l=>{if(seen.has(l.entity_id))return false;seen.add(l.entity_id);return true;});
+      let xr='<div class="cross-ref-section">';
+      xr+='<div class="cross-ref-header"><i class="fa-solid fa-link"></i> Cross-References <span class="cross-ref-badge">'+uniq.length+' link'+(uniq.length!==1?'s':'')+'</span></div>';
+      uniq.forEach(link=>{
+        const pid=esc(link.project_id||'');
+        const pname=esc(link.project_name||'Unknown Project');
+        const etype=esc(link.entity_type||'');
+        const eval_=esc(link.entity_value||'');
+        const reason=esc(link.match_reason||'value match');
+        xr+='<div class="cross-ref-item">';
+        xr+='<div><span style="color:var(--cyan);font-family:monospace">'+etype+'</span> <strong>'+eval_+'</strong><div class="xref-meta">in &ldquo;'+pname+'&rdquo; &mdash; '+reason+'</div></div>';
+        xr+='<button class="btn-xref" onclick="viewCrossRef(\''+pid+'\',\''+pname.replace(/'/g,"\\'")+'\')" title="Open linked investigation"><i class="fa-solid fa-arrow-up-right-from-square"></i> View</button>';
+        xr+='</div>';
+      });
+      xr+='</div>';
+      html+=xr;
     }
 
     card.innerHTML=html;
@@ -2324,9 +2513,10 @@ async function loadInvestigations(){
         const ec=report.summary?report.summary.total_entities:0;
         const fc=report.summary?report.summary.total_findings:0;
         const pc=report.summary?report.summary.total_patterns:0;
-        details.push({id:p.id,name:p.name,status:p.status,entities:ec,findings:fc,patterns:pc});
+        const lc=report.summary?report.summary.total_links||0:0;
+        details.push({id:p.id,name:p.name,status:p.status,entities:ec,findings:fc,patterns:pc,links:lc});
       }catch(e){
-        details.push({id:p.id,name:p.name,status:p.status,entities:0,findings:0,patterns:0});
+        details.push({id:p.id,name:p.name,status:p.status,entities:0,findings:0,patterns:0,links:0});
       }
     }
 
@@ -2336,13 +2526,15 @@ async function loadInvestigations(){
     }
 
     const body=document.getElementById('investigationsBody');
-    let html='<table class="inv-table"><thead><tr><th>Project</th><th>Status</th><th>Entities</th><th>Findings</th><th></th></tr></thead><tbody>';
+    let html='<table class="inv-table"><thead><tr><th>Project</th><th>Status</th><th>Entities</th><th>Findings</th><th>Links</th><th></th></tr></thead><tbody>';
     details.forEach(d=>{
       const isDemo=/demo|dude/i.test(d.name);
       const sel=d.id===projectId?' selected':'';
       const demo=isDemo?' demo-highlight':'';
       html+='<tr class="'+sel+demo+'" onclick="selectProject(\''+d.id+'\',\''+esc(d.name)+'\')">';
       html+='<td>'+esc(d.name)+'</td><td>'+esc(d.status)+'</td><td>'+d.entities+'</td><td>'+d.findings+'</td>';
+      const linkBadge=d.links>0?'<span class="xref-count-badge"><i class="fa-solid fa-link"></i> '+d.links+'</span>':'<span style="color:var(--text-dim);font-size:.75rem">—</span>';
+      html+='<td>'+linkBadge+'</td>';
       html+='<td><button class="btn-delete-sm" onclick="deleteProject(\''+d.id+'\',\''+esc(d.name).replace(/'/g,"\\'")+'\',event)" title="Delete investigation"><i class="fa-solid fa-trash"></i></button></td>';
       html+='</tr>';
     });
@@ -2614,6 +2806,15 @@ function migrateHistoryOnUpgrade(){
     localStorage.setItem('vk_inv_history', JSON.stringify(merged));
     sessionStorage.removeItem('vk_inv_history');
   }
+}
+
+function viewCrossRef(linkedProjectId, linkedProjectName){
+  if(!linkedProjectId){log('CROSS-REF: No project ID for linked entity','error');return;}
+  log('CROSS-REF: Navigating to linked investigation "'+linkedProjectName+'"...','warn');
+  selectProject(linkedProjectId, linkedProjectName);
+  // Scroll to investigations panel
+  const invPanel=document.getElementById('panelInvestigations');
+  if(invPanel) invPanel.scrollIntoView({behavior:'smooth',block:'start'});
 }
 
 function addToHistory(pid, name, targets, summary){

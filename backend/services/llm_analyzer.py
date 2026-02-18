@@ -103,6 +103,8 @@ class LLMAnalyzer:
             if total_findings > shown_findings else f"({total_findings} total findings)"
         )
 
+        cross_ref_section = self._build_cross_ref_section(entities)
+
         prompt = (
             f"You are a senior OSINT intelligence analyst. Analyze these OSINT findings "
             f"for targets [{targets_str}]. {scope_note}\n\n"
@@ -119,10 +121,56 @@ class LLMAnalyzer:
             "Be specific. Reference actual data. Do not fabricate.\n\n"
             "=== INTELLIGENCE DATA ===\n\n"
             + "\n\n".join(data_sections)
-            + "\n\n=== END DATA ===\n\n"
-            "Respond with ONLY the JSON object. No markdown, no explanation."
+            + "\n\n=== END DATA ==="
+            + (f"\n\n=== CROSS-REFERENCES ===\n{cross_ref_section}\n=== END CROSS-REFERENCES ===" if cross_ref_section else "")
+            + "\n\nRespond with ONLY the JSON object. No markdown, no explanation."
         )
         return prompt
+
+    def _build_cross_ref_section(self, entities: list[Entity]) -> str:
+        """Summarise cross-investigation links for inclusion in the LLM prompt."""
+        entity_ids = [e.id for e in entities]
+        try:
+            findings_with_links = (
+                self.db.query(Finding)
+                .filter(
+                    Finding.entity_id.in_(entity_ids),
+                    Finding.links.isnot(None),
+                )
+                .all()
+            )
+        except Exception:
+            return ""
+
+        seen: set[str] = set()
+        all_links: list[dict] = []
+        for f in findings_with_links:
+            for link in (f.links or []):
+                key = link.get("entity_id", "")
+                if key and key not in seen:
+                    seen.add(key)
+                    all_links.append(link)
+
+        if not all_links:
+            return ""
+
+        lines = [
+            f"This investigation has {len(all_links)} cross-reference(s) to other investigations:",
+        ]
+        for link in all_links[:10]:  # cap to stay within context budget
+            lines.append(
+                f"  - {link.get('entity_type')} '{link.get('entity_value')}' "
+                f"also appears in project '{link.get('project_name')}' "
+                f"({link.get('match_reason', 'value match')})"
+            )
+        if len(all_links) > 10:
+            lines.append(f"  ... and {len(all_links) - 10} more cross-reference(s).")
+        lines.append(
+            "Factor these cross-references into your analysis. "
+            "If the same entity appears in multiple investigations, this may indicate "
+            "a pattern, shared infrastructure, or a recurring threat actor."
+        )
+        return "\n".join(lines)
 
     def _call_ollama(self, prompt: str) -> str | None:
         url = f"{self.settings.OLLAMA_BASE_URL}/api/generate"

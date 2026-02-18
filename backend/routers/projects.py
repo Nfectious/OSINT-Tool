@@ -6,8 +6,9 @@ from datetime import datetime
 
 from database import get_db
 from rate_limit import limiter
-from auth import get_current_user_id
+from auth import get_current_user_id, get_current_user
 from models.project import Project
+from models.user import User
 from models.entity import Entity
 from models.pattern import Pattern
 from services.anon_stats import record_run, record_analysis, record_error
@@ -117,18 +118,31 @@ def delete_project(project_id: str, db: Session = Depends(get_db)):
     return project
 
 
+_ADMIN_EMAIL = "tcmherd@proton.me"
+
+
 @router.post("/{project_id}/run", response_model=RunResponse)
 @limiter.limit("10/minute")
-def run_project(project_id: str, request: Request, db: Session = Depends(get_db), user_id: str = Depends(get_current_user_id)):
+def run_project(
+    project_id: str,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     project = db.query(Project).filter(Project.id == project_id).first()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
+
+    is_premium = (
+        current_user.tier in ("pro", "enterprise")
+        or current_user.email == _ADMIN_EMAIL
+    )
 
     entities = db.query(Entity).filter(Entity.project_id == project_id).all()
     entity_types = [e.entity_type for e in entities]
 
     from services.osint_runner import OSINTRunner
-    runner = OSINTRunner(db)
+    runner = OSINTRunner(db, is_premium=is_premium)
     try:
         result = runner.run_project(project_id)
     except Exception as exc:
@@ -175,6 +189,7 @@ def get_project_report(project_id: str, db: Session = Depends(get_db)):
     patterns = db.query(Pattern).filter(Pattern.project_id == project_id).all()
 
     entity_reports = []
+    total_links = 0
     for entity in entities:
         findings = [
             {
@@ -185,10 +200,12 @@ def get_project_report(project_id: str, db: Session = Depends(get_db)):
                 "severity": f.severity,
                 "tags": f.tags,
                 "raw_data": f.raw_data,
+                "links": f.links or [],
                 "created_at": f.created_at.isoformat() if f.created_at else None,
             }
             for f in entity.findings
         ]
+        total_links += sum(len(f["links"]) for f in findings if f["links"])
         entity_reports.append({
             "id": entity.id,
             "entity_type": entity.entity_type,
@@ -226,5 +243,6 @@ def get_project_report(project_id: str, db: Session = Depends(get_db)):
             "total_entities": len(entities),
             "total_findings": sum(len(e.findings) for e in entities),
             "total_patterns": len(patterns),
+            "total_links": total_links,
         },
     }

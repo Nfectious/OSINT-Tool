@@ -43,3 +43,14 @@ def create_all_tables():
     import models  # noqa: F401 — ensure all models are imported
     wait_for_db()
     Base.metadata.create_all(bind=engine)
+
+
+def run_migrations():
+    """Apply additive schema migrations that create_all cannot handle."""
+    with engine.connect() as conn:
+        # 2024-cross-ref: add links column to findings for cross-investigation references
+        conn.execute(text(
+            "ALTER TABLE findings ADD COLUMN IF NOT EXISTS links JSON"
+        ))
+        conn.commit()
+    logger.info("Schema migrations applied.")

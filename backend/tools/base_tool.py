@@ -8,6 +8,9 @@ logger = logging.getLogger(__name__)
 class BaseTool(ABC):
     """Abstract base class for all OSINT tools."""
 
+    # Set to True on subclasses that require a premium account to run
+    premium_only: bool = False
+
     @property
     @abstractmethod
     def name(self) -> str:
