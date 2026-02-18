@@ -139,7 +139,7 @@ class LLMAnalyzer:
 
         try:
             logger.info(f"Calling Ollama at {url} with model {self.settings.OLLAMA_MODEL}")
-            resp = requests.post(url, json=payload, timeout=300)
+            resp = requests.post(url, json=payload, timeout=600)
             resp.raise_for_status()
             data = resp.json()
             response_text = data.get("response", "")
