@@ -104,28 +104,116 @@ class LLMAnalyzer:
         )
 
         cross_ref_section = self._build_cross_ref_section(entities)
+        intra_links_section = self._build_intra_project_links(entities, findings)
 
         prompt = (
             f"You are a senior OSINT intelligence analyst. Analyze these OSINT findings "
             f"for targets [{targets_str}]. {scope_note}\n\n"
-            "Detect patterns, risks, entity links, and threat indicators.\n\n"
+            "Detect patterns, risks, connections between targets, and threat indicators. "
+            "Pay close attention to shared data (same phone in multiple tools, "
+            "same email in WHOIS and breach data, shared addresses, etc.).\n\n"
             "Respond with ONLY a JSON object containing exactly these keys:\n"
             '{\n'
             '  "risk_score": "low"|"medium"|"high"|"critical",\n'
-            '  "summary": "detailed paragraph summarizing all findings",\n'
-            '  "relationships": "entity links and connections found",\n'
-            '  "anomalies": "suspicious patterns or red flags",\n'
-            '  "leads": "recommended next investigation steps",\n'
-            '  "recommendations": "actionable security recommendations"\n'
+            '  "summary": "detailed paragraph summarizing all findings and how targets connect",\n'
+            '  "relationships": "specific connections found between targets — shared data, overlapping identifiers, common associations",\n'
+            '  "anomalies": "suspicious patterns, inconsistencies, or red flags",\n'
+            '  "leads": "recommended next investigation steps based on the connections found",\n'
+            '  "recommendations": "actionable security or investigative recommendations"\n'
             '}\n\n'
-            "Be specific. Reference actual data. Do not fabricate.\n\n"
+            "Be specific. Reference actual values from the data. Do not fabricate.\n\n"
             "=== INTELLIGENCE DATA ===\n\n"
             + "\n\n".join(data_sections)
             + "\n\n=== END DATA ==="
-            + (f"\n\n=== CROSS-REFERENCES ===\n{cross_ref_section}\n=== END CROSS-REFERENCES ===" if cross_ref_section else "")
+            + (f"\n\n=== CONNECTIONS WITHIN THIS INVESTIGATION ===\n{intra_links_section}\n=== END CONNECTIONS ===" if intra_links_section else "")
+            + (f"\n\n=== CROSS-REFERENCES (other investigations) ===\n{cross_ref_section}\n=== END CROSS-REFERENCES ===" if cross_ref_section else "")
             + "\n\nRespond with ONLY the JSON object. No markdown, no explanation."
         )
         return prompt
+
+    def _build_intra_project_links(self, entities: list[Entity], findings: list[Finding]) -> str:
+        """
+        Detect connections between entities within this project by mining shared
+        values in their findings raw_data (e.g., same email in WHOIS + breach data,
+        shared org name across two domain lookups, same area code across phones).
+        """
+        connections: list[str] = []
+
+        # Build a lookup of entity values (lowercased) to entity labels
+        entity_map = {e.id: e for e in entities}
+
+        # Collect extractable values per entity from raw_data
+        entity_extracted: dict[str, set[str]] = {e.id: set() for e in entities}
+        for finding in findings:
+            raw = finding.raw_data or {}
+            eid = finding.entity_id
+            if eid not in entity_extracted:
+                continue
+
+            # Pull notable identifiers from raw data
+            for key in ("emails", "email"):
+                val = raw.get(key)
+                if isinstance(val, list):
+                    entity_extracted[eid].update(v.lower() for v in val if isinstance(v, str) and "@" in v)
+                elif isinstance(val, str) and "@" in val:
+                    entity_extracted[eid].add(val.lower())
+
+            for key in ("org", "name", "registrar"):
+                val = raw.get(key)
+                if isinstance(val, str) and 3 < len(val) < 80:
+                    entity_extracted[eid].add(f"org:{val.lower()}")
+
+            for key in ("isp", "asname"):
+                val = raw.get(key)
+                if isinstance(val, str) and 3 < len(val) < 80:
+                    entity_extracted[eid].add(f"isp:{val.lower()}")
+
+            # Area code from phone values
+            parent_entity = entity_map.get(eid)
+            if parent_entity and parent_entity.entity_type == "phone":
+                phone = parent_entity.value.replace("+", "").replace(" ", "")
+                if len(phone) >= 10:
+                    entity_extracted[eid].add(f"areacode:{phone[1:4] if phone.startswith('1') else phone[:3]}")
+
+            # Country code from ip-api data
+            cc = raw.get("country_code")
+            if isinstance(cc, str) and len(cc) == 2:
+                entity_extracted[eid].add(f"country:{cc.lower()}")
+
+            # Email domain
+            email_val = entity_map.get(eid)
+            if email_val and email_val.entity_type == "email" and "@" in email_val.value:
+                domain = email_val.value.split("@", 1)[1].lower()
+                if domain not in ("gmail.com", "yahoo.com", "hotmail.com", "outlook.com"):
+                    entity_extracted[eid].add(f"domain:{domain}")
+
+        # Find pairs of entities that share extracted values
+        entity_ids = list(entity_extracted.keys())
+        seen_pairs: set[frozenset] = set()
+        for i, eid_a in enumerate(entity_ids):
+            for eid_b in entity_ids[i + 1:]:
+                shared = entity_extracted[eid_a] & entity_extracted[eid_b]
+                if not shared:
+                    continue
+                pair_key = frozenset([eid_a, eid_b])
+                if pair_key in seen_pairs:
+                    continue
+                seen_pairs.add(pair_key)
+                ea = entity_map[eid_a]
+                eb = entity_map[eid_b]
+                for sv in list(shared)[:3]:  # cap per pair to keep prompt short
+                    label = sv.split(":", 1)[1] if ":" in sv else sv
+                    kind = sv.split(":", 1)[0] if ":" in sv else "value"
+                    connections.append(
+                        f"  - [{ea.entity_type}: {ea.value}] ↔ [{eb.entity_type}: {eb.value}]"
+                        f" share {kind} '{label}'"
+                    )
+
+        if not connections:
+            return ""
+
+        header = f"Found {len(connections)} internal connection(s) between targets in this investigation:"
+        return header + "\n" + "\n".join(connections[:20])  # cap at 20
 
     def _build_cross_ref_section(self, entities: list[Entity]) -> str:
         """Summarise cross-investigation links for inclusion in the LLM prompt."""

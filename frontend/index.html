@@ -960,20 +960,20 @@ body::after{
         <span class="user-tier" id="userTier"></span>
         <button class="btn btn-logout" onclick="doLogout()" style="font-size:.75rem;padding:.35rem .65rem"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
       </div>
-      <!-- Operator Dossier Dropdown -->
+      <!-- Account Dropdown -->
       <div id="dossierDropdown" class="dossier hidden">
-        <h4><i class="fa-solid fa-id-badge"></i> OPERATOR DOSSIER</h4>
-        <p><strong>Clearance:</strong> <span id="dossierClearance">OPERATOR</span></p>
-        <p><strong>Access Level:</strong> <span id="dossierTier">TIER-1</span></p>
+        <h4><i class="fa-solid fa-id-badge"></i> My Account</h4>
+        <p><strong>Email:</strong> <span id="dossierClearance">--</span></p>
+        <p><strong>Plan:</strong> <span id="dossierTier">Free</span></p>
         <p><strong>Session ID:</strong> <span id="dossierSession">----</span></p>
         <p><strong>Last Login:</strong> <span id="dossierLogin">--</span></p>
         <p><strong>Projects:</strong> <span id="dossierProjects">0</span></p>
       </div>
       <span><span class="status-dot"></span> <span class="text-dim text-sm">ONLINE</span></span>
-      <span class="threat-meter" id="opsecThreat">OPSEC: <span id="threatLevel">--</span></span>
+      <span class="threat-meter" id="opsecThreat">Risk: <span id="threatLevel">--</span></span>
       <div class="mission-clock">
         <div class="mc-local" id="mcLocal">--:--:--</div>
-        <div class="mc-zulu">ZULU <span id="mcZulu">--:--:--</span></div>
+        <div class="mc-zulu">UTC <span id="mcZulu">--:--:--</span></div>
       </div>
     </div>
   </div>
@@ -1090,7 +1090,7 @@ body::after{
   <!-- WELCOME BANNER -->
   <div class="welcome-banner hidden" id="welcomeBanner">
     <strong id="welcomeUser">Welcome back!</strong><br>
-    <div class="wb-sub">Explore the DEMO project or create a new one. Add phone targets, execute OSINT runs, and view AI analysis. NumVerify carrier lookup active. Feedback to @L7Dare!</div>
+    <div class="wb-sub">Start by creating an investigation or try the DEMO. Add any targets you know (phone, email, name, domain), then search and let AI analyze the results.</div>
   </div>
 
   <!-- MY INVESTIGATIONS -->
@@ -1139,9 +1139,9 @@ body::after{
 
   <!-- STATS ROW (current investigation only) -->
   <div class="stats-row" id="statsRow">
-    <div class="stat-box"><div class="val" id="statEntities">0</div><div class="lbl"><i class="fa-solid fa-crosshairs"></i> Entities</div></div>
-    <div class="stat-box"><div class="val" id="statFindings">0</div><div class="lbl"><i class="fa-solid fa-magnifying-glass"></i> Findings</div></div>
-    <div class="stat-box"><div class="val" id="statPatterns">0</div><div class="lbl"><i class="fa-solid fa-brain"></i> Patterns</div></div>
+    <div class="stat-box"><div class="val" id="statEntities">0</div><div class="lbl"><i class="fa-solid fa-crosshairs"></i> Targets</div></div>
+    <div class="stat-box"><div class="val" id="statFindings">0</div><div class="lbl"><i class="fa-solid fa-magnifying-glass"></i> Results</div></div>
+    <div class="stat-box"><div class="val" id="statPatterns">0</div><div class="lbl"><i class="fa-solid fa-brain"></i> AI Insights</div></div>
     <div class="stat-box"><div class="val" id="statSeverity">--</div><div class="lbl"><i class="fa-solid fa-triangle-exclamation"></i> Max Severity</div></div>
   </div>
 
@@ -1166,7 +1166,7 @@ body::after{
           <textarea id="projDesc" placeholder="Brief description of investigation targets and objectives..."></textarea>
         </div>
         <button class="btn btn-green btn-block gated-btn" id="btnCreateProject" onclick="createProject()">
-          <i class="fa-solid fa-rocket"></i> Initialize Project
+          <i class="fa-solid fa-rocket"></i> Create Investigation
         </button>
         <div style="text-align:center;font-size:.75rem;color:var(--text-muted);margin-top:.5rem">Start a fresh case. Clears current targets and findings.</div>
         <div class="mt-1 text-center text-dim text-sm hidden" id="projectIdDisplay"></div>
@@ -1180,11 +1180,11 @@ body::after{
     <div class="panel" id="panelTargets">
       <div class="panel-head">
         <span class="dot" style="background:var(--amber)"></span>
-        <span class="label"><i class="fa-solid fa-crosshairs"></i> Target Acquisition</span>
+        <span class="label"><i class="fa-solid fa-crosshairs"></i> Add What You Know</span>
       </div>
       <div class="panel-body">
         <div class="field">
-          <label>Entity Type</label>
+          <label>What type of info?</label>
           <select id="entityType">
             <option value="phone">Phone Number</option>
             <option value="email">Email Address</option>
@@ -1217,7 +1217,7 @@ body::after{
     </div>
 
     <!-- SECTION: STEP 3 — RUN -->
-    <div class="section-divider"><span class="sd-label"><span class="sd-num">3</span> Execute Run</span></div>
+    <div class="section-divider"><span class="sd-label"><span class="sd-num">3</span> Search &amp; Analyze</span></div>
 
     <!-- EXECUTE RUN -->
     <div class="panel full-width" id="panelRun">
@@ -1228,22 +1228,22 @@ body::after{
       <div class="panel-body text-center">
         <div style="display:inline-flex;flex-direction:column;align-items:center;gap:.3rem;vertical-align:top">
           <button class="btn btn-red btn-lg gated-btn" id="btnRun" onclick="executeRun()" disabled title="Select an investigation first">
-            <i class="fa-solid fa-play"></i> Execute OSINT Run
+            <i class="fa-solid fa-play"></i> Search &amp; Gather Info
           </button>
-          <span style="font-size:.7rem;color:var(--text-muted)">Pulls public intelligence (carrier, breach checks, etc.)</span>
+          <span style="font-size:.7rem;color:var(--text-muted)">Searches public sources (phone, breach, domain, etc.)</span>
         </div>
         <div style="display:inline-flex;flex-direction:column;align-items:center;gap:.3rem;vertical-align:top;margin-left:1rem">
           <button class="btn btn-cyan btn-lg gated-btn" id="btnAnalyze" onclick="runAnalysis()" disabled title="Select an investigation first">
             <i class="fa-solid fa-brain"></i> Run AI Analysis
             <span style="font-size:.6rem;background:var(--amber);color:#000;padding:.1rem .4rem;border-radius:2px;margin-left:.4rem;letter-spacing:.08em">PREMIUM</span>
           </button>
-          <span style="font-size:.7rem;color:var(--text-muted)">Local AI detects patterns &amp; risks. Free&nbsp;=&nbsp;basic. Premium&nbsp;=&nbsp;full&nbsp;report.</span>
+          <span style="font-size:.7rem;color:var(--text-muted)">AI finds patterns &amp; risks. Free&nbsp;=&nbsp;basic summary. Premium&nbsp;=&nbsp;full&nbsp;report.</span>
         </div>
         <div class="run-status" id="runStatus">
-          <span class="blink">&#x2588;</span> <i class="fa-solid fa-spinner fa-spin"></i> COLLECTING INTELLIGENCE...
+          <span class="blink">&#x2588;</span> <i class="fa-solid fa-spinner fa-spin"></i> Searching...
         </div>
         <div class="run-status" id="analyzeStatus">
-          <span class="blink">&#x2588;</span> <i class="fa-solid fa-spinner fa-spin"></i> RUNNING AI ANALYSIS...
+          <span class="blink">&#x2588;</span> <i class="fa-solid fa-spinner fa-spin"></i> Analyzing with AI...
         </div>
 
         <!-- AI Analysis Example Preview (always visible) -->
@@ -1359,7 +1359,7 @@ function initDisclaimerGate(){
       localStorage.setItem('vk_ethical_ack', '1');
       disclaimer.classList.add('acknowledged');
       enableGatedButtons();
-      log('DISCLAIMER: Ethical use acknowledged', 'system');
+      log('Ethical use policy acknowledged', 'system');
     }
   });
 }
@@ -1552,7 +1552,7 @@ function renderPayPalButton(){
       localStorage.setItem('vk_isPremium', 'true');
       updateFreemiumUI();
       closePaywall();
-      log('PREMIUM: Subscription activated! Subscription ID: ' + data.subscriptionID, 'info');
+      log('Premium subscription activated!', 'info');
       alert('Premium activated! You now have unlimited runs.');
     },
     onError: function(err){
@@ -1600,7 +1600,7 @@ function renderReportPayPalButton(){
       return actions.order.capture().then(function(details){
         if(projectId) unlockReport(projectId);
         closeReportPay();
-        log('REPORT PURCHASED: Full report unlocked for project ' + (projectId ? projectId.slice(0,8) : '??'), 'info');
+        log('Report unlocked for this investigation', 'info');
         alert('Report unlocked! Loading full analysis...');
         loadPatterns();
       });
@@ -1621,7 +1621,7 @@ function acceptConsent(){
   if(!document.getElementById('consentCheck').checked) return;
   localStorage.setItem('vk_consent_accepted', '1');
   document.getElementById('consentOverlay').classList.add('hidden');
-  log('CONSENT: Anonymous aggregate logging accepted', 'system');
+  log('Anonymous usage logging enabled', 'system');
 }
 document.addEventListener('DOMContentLoaded', function(){
   const cb = document.getElementById('consentCheck');
@@ -1661,7 +1661,7 @@ function computeThreat(findings){
 }
 setThreatLevel('elevated');
 
-/* ─── Operator Dossier ─── */
+/* ─── Account Dropdown ─── */
 (function initDossier(){
   const emailEl=document.getElementById('userEmail');
   const dropdown=document.getElementById('dossierDropdown');
@@ -1774,7 +1774,7 @@ function doLogout(){
   document.getElementById('dossierDropdown').classList.add('hidden');
   document.getElementById('welcomeBanner').classList.add('hidden');
   setThreatLevel('elevated');
-  log('LOGOUT: Session terminated','warn');
+  log('Logged out','warn');
 }
 
 async function onAuthSuccess(){
@@ -1791,11 +1791,12 @@ async function onAuthSuccess(){
   document.getElementById('userBar').classList.remove('hidden');
   document.getElementById('userEmail').textContent=currentUser.email;
   document.getElementById('userTier').textContent=currentUser.tier.toUpperCase();
-  log('AUTH: Logged in as '+currentUser.email+' ['+currentUser.tier+']','system');
+  log('Logged in as '+currentUser.email+' ('+currentUser.tier+' plan)','system');
   const wb=document.getElementById('welcomeBanner');
   wb.classList.remove('hidden');
-  document.getElementById('welcomeUser').innerHTML='Welcome back, '+esc(currentUser.email)+' ['+currentUser.tier.toUpperCase()+' TIER]';
-  document.getElementById('dossierTier').textContent=currentUser.tier.toUpperCase();
+  document.getElementById('welcomeUser').innerHTML='Welcome back, '+esc(currentUser.email)+'!';
+  document.getElementById('dossierClearance').textContent=currentUser.email;
+  document.getElementById('dossierTier').textContent=currentUser.tier.charAt(0).toUpperCase()+currentUser.tier.slice(1);
   document.getElementById('dossierSession').textContent=authToken?authToken.slice(-12).toUpperCase():'----';
   document.getElementById('dossierLogin').textContent=new Date().toLocaleString();
   // Clear stale premium flag — only set if server confirms premium tier
@@ -1810,8 +1811,8 @@ async function onAuthSuccess(){
     document.getElementById('userTier').style.background='rgba(255,0,0,.15)';
     document.getElementById('userTier').style.color='var(--red)';
     document.getElementById('userTier').style.borderColor='var(--red-dim)';
-    document.getElementById('dossierClearance').textContent='ADMIN — UNLIMITED';
-    log('ADMIN MODE: Unlimited access granted — no run limits','system');
+    document.getElementById('dossierTier').textContent='Admin (Unlimited)';
+    log('Admin mode: full access enabled','system');
   }
   updateFreemiumUI(); // sets admin banner, run counter, etc.
   migrateHistoryOnUpgrade();
@@ -1848,12 +1849,12 @@ async function createProject(){
   if(!name){log('ERROR: Investigation name is required','error');return}
   const btn=document.getElementById('btnCreateProject');
   btn.disabled=true;
-  log('INIT: Creating investigation "'+name+'"...','system');
+  log('Creating investigation "'+name+'"...','system');
   try{
     const data=await api('POST','/projects',{name,description:desc,target_summary:desc});
     projectId=data.id;
     sessionStorage.setItem('projectId',data.id);
-    log('PROJECT CREATED: '+projectId,'info');
+    log('Investigation created: '+projectId,'info');
     document.getElementById('projectIdDisplay').textContent='Project ID: '+projectId;
     document.getElementById('projectIdDisplay').classList.remove('hidden');
     // Show current investigation label
@@ -1883,7 +1884,7 @@ async function addEntity(){
   const val=document.getElementById('entityValue').value.trim();
   const label=document.getElementById('entityLabel').value.trim();
   if(!val){log('ERROR: Target value is required','error');return}
-  log('TARGET: Adding '+etype+' = '+val,'system');
+  log('Adding target: '+etype+' = '+val,'system');
   try{
     const body={entity_type:etype,value:val};
     if(label) body.label=label;
@@ -1893,7 +1894,7 @@ async function addEntity(){
     updateStats();
     document.getElementById('entityValue').value='';
     document.getElementById('entityLabel').value='';
-    log('TARGET ACQUIRED: '+etype+' / '+val+' ['+data.id.slice(0,8)+']','info');
+    log('Target added: '+etype+' / '+val,'info');
     if(currentStep<3) setStep(3);
   }catch(e){
     log('ERROR: '+e.message,'error');
@@ -1932,7 +1933,7 @@ async function deleteEntity(entityId){
     await api('DELETE','/projects/'+projectId+'/entities/'+entityId);
     entities=entities.filter(e=>e.id!==entityId);
     renderEntityList();
-    log('TARGET REMOVED: entity '+entityId.slice(0,8),'warn');
+    log('Target removed','warn');
   }catch(e){
     log('DELETE TARGET ERROR: '+e.message,'error');
   }
@@ -1948,7 +1949,7 @@ async function clearAllTargets(){
   }
   entities=[];
   renderEntityList();
-  log('TARGETS CLEARED: All entities removed from investigation','warn');
+  log('All targets removed from this investigation','warn');
 }
 
 /* ─── Execute OSINT Run ─── */
@@ -1959,7 +1960,7 @@ async function executeRun(){
 
   // Freemium gate
   if(!canRun()){
-    log('LIMIT: Daily free run limit reached. Upgrade to Premium.','warn');
+    log('Daily free search limit reached. Upgrade to Premium for more.','warn');
     showPaywall();
     return;
   }
@@ -1967,7 +1968,7 @@ async function executeRun(){
   const btn=document.getElementById('btnRun');
   btn.disabled=true;
   document.getElementById('runStatus').classList.add('active');
-  log('EXECUTE: Starting OSINT collection run...','warn');
+  log('Starting search...','warn');
 
   // Record aggregate stats and decrement daily quota
   const entityTypes = entities.map(e => e.entity_type);
@@ -1976,7 +1977,7 @@ async function executeRun(){
 
   try{
     const data=await api('POST','/projects/'+projectId+'/run',null,true);
-    log('RUN COMPLETE: Processed '+data.entities_processed+' entities, '+data.findings_created+' findings created','info');
+    log('Search complete: '+data.entities_processed+' target(s) processed, '+data.findings_created+' results found','info');
     document.getElementById('runStatus').classList.remove('active');
     await refreshProject();
     await loadFindings();
@@ -1990,7 +1991,7 @@ async function executeRun(){
     const findingsCount=document.getElementById('statFindings').textContent;
     addToHistory(projectId, invName, targets, findingsCount+' findings collected');
   }catch(e){
-    log('RUN ERROR: '+e.message,'error');
+    log('Search error: '+e.message,'error');
     recordError();
     document.getElementById('runStatus').classList.remove('active');
     btn.disabled=false;
@@ -2021,7 +2022,7 @@ function updateStats(projectData){
 /* ─── Load Findings ─── */
 async function loadFindings(){
   if(!projectId) return;
-  log('FETCH: Loading intelligence findings...','system');
+  log('Loading results...','system');
   try{
     const report=await api('GET','/projects/'+projectId+'/report');
     const allFindings=[];
@@ -2046,11 +2047,11 @@ async function loadFindings(){
       fp.classList.remove('hidden','collapsed');
       document.getElementById('findingsCount').textContent=allFindings.length;
       renderFindings(allFindings);
-      log('FINDINGS: '+allFindings.length+' intelligence items loaded','info');
+      log(allFindings.length+' result(s) loaded','info');
       computeThreat(allFindings);
       if(currentStep<4) setStep(4);
     }else{
-      log('FINDINGS: No findings returned','warn');
+      log('No results found yet — run a search first','warn');
       computeThreat([]);
     }
   }catch(e){
@@ -2066,11 +2067,14 @@ function renderFindings(findings){
     card.className='finding-card sev-'+(f.severity||'info');
 
     const _PREMIUM_TOOLS=['IP-Geo','DomainRep','EmailRep','NameOSINT','HaveIBeenPwned'];
+    const _TOOL_LABELS={'holehe':'Account Checker','haveibeenpwned':'Data Breach Check','emailrep':'Email Reputation','virustotal':'Virus / Malware Scan','whois':'Domain Registration Info','dnslookup':'DNS Lookup','ip-geo':'IP Location & Network','domainrep':'Domain Reputation','nameosint':'Social Media Search','numverify':'Phone Carrier Lookup','sherlock':'Username Search'};
     const isPremiumTool=_PREMIUM_TOOLS.some(t=>new RegExp(t,'i').test(f.tool_name||''));
-    let html='<div class="finding-tool"><i class="fa-solid fa-wrench"></i> '+esc(f.tool_name||'Unknown Tool')+(isPremiumTool?'<span class="premium-badge"><i class="fa-solid fa-star"></i> premium</span>':'')+'</div>';
+    const toolKey=(f.tool_name||'').toLowerCase().replace(/[^a-z0-9]/g,'');
+    const toolLabel=_TOOL_LABELS[toolKey]||_TOOL_LABELS[Object.keys(_TOOL_LABELS).find(k=>toolKey.includes(k))||'']||f.tool_name||'Unknown Tool';
+    let html='<div class="finding-tool"><i class="fa-solid fa-wrench"></i> '+esc(toolLabel)+(isPremiumTool?'<span class="premium-badge"><i class="fa-solid fa-star"></i> premium</span>':'')+'</div>';
     html+='<div class="finding-severity">'+(f.severity||'info')+'</div>';
     html+='<div class="finding-summary">'+esc(f.summary||'No summary available')+'</div>';
-    html+='<div class="finding-entity"><i class="fa-solid fa-crosshairs"></i> '+esc(f._entity_type)+' : '+esc(f._entity_value)+'</div>';
+    html+='<div class="finding-entity"><i class="fa-solid fa-crosshairs"></i> Target: '+esc(f._entity_value)+'</div>';
 
     if(f.tags&&f.tags.length){
       html+='<div class="finding-meta">';
@@ -2279,7 +2283,7 @@ async function runAnalysis(){
 
   // Freemium gate for AI analysis too
   if(!isPremium() && !canRun()){
-    log('LIMIT: Daily free limit reached. Upgrade for unlimited AI analysis.','warn');
+    log('Daily free limit reached. Upgrade for unlimited AI analysis.','warn');
     showPaywall();
     return;
   }
@@ -2287,7 +2291,7 @@ async function runAnalysis(){
   const btn=document.getElementById('btnAnalyze');
   btn.disabled=true;
   document.getElementById('analyzeStatus').classList.add('active');
-  log('ANALYSIS: Initiating AI pattern analysis (qwen2.5:7b via Ollama)...','warn');
+  log('Running AI analysis...','warn');
   recordAnalysis();
 
   // AI runs consume daily quota for free users (not admin)
@@ -2295,7 +2299,7 @@ async function runAnalysis(){
 
   try{
     const data=await api('POST','/projects/'+projectId+'/analyze',null,true);
-    log('ANALYSIS COMPLETE: '+data.patterns_created+' patterns identified','info');
+    log('AI analysis complete: '+data.patterns_created+' insight(s) found','info');
     document.getElementById('analyzeStatus').classList.remove('active');
     await loadPatterns();
     loadPlatformStats();
@@ -2383,8 +2387,10 @@ function renderPatterns(patterns){
     const card=document.createElement('div');
     card.className='pattern-card type-'+(p.pattern_type||'summary');
     const iconMap={summary:'fa-file-lines',relationship:'fa-link',anomaly:'fa-triangle-exclamation',lead:'fa-lightbulb',recommendation:'fa-clipboard-check'};
+    const labelMap={summary:'Summary',relationship:'Connections',anomaly:'Flags',lead:'Next Steps',recommendation:'Advice'};
     const icon=iconMap[p.pattern_type]||'fa-circle-info';
-    card.innerHTML='<div class="pattern-type"><i class="fa-solid '+icon+'"></i> '+esc(p.pattern_type||'insight')+'</div>'
+    const label=labelMap[p.pattern_type]||p.pattern_type||'Insight';
+    card.innerHTML='<div class="pattern-type"><i class="fa-solid '+icon+'"></i> '+esc(label)+'</div>'
       +'<div class="pattern-desc">'+esc(p.description||'No description')+'</div>'
       +'<div class="pattern-conf">Confidence: '+(p.confidence!==undefined?Math.round(p.confidence*100)+'%':'N/A')
       +(p.llm_model?' &middot; Model: '+esc(p.llm_model):'')+'</div>';
@@ -2422,11 +2428,13 @@ function renderPatternsLimited(patterns){
     const card=document.createElement('div');
     card.className='pattern-card type-'+(p.pattern_type||'summary');
     const iconMap={summary:'fa-file-lines',relationship:'fa-link',anomaly:'fa-triangle-exclamation',lead:'fa-lightbulb',recommendation:'fa-clipboard-check'};
+    const labelMap={summary:'Summary',relationship:'Connections',anomaly:'Flags',lead:'Next Steps',recommendation:'Advice'};
     const icon=iconMap[p.pattern_type]||'fa-circle-info';
+    const label=labelMap[p.pattern_type]||p.pattern_type||'Insight';
 
     if(p.pattern_type === 'summary' && shown < 1){
       // Show first summary in full
-      card.innerHTML='<div class="pattern-type"><i class="fa-solid '+icon+'"></i> '+esc(p.pattern_type||'insight')+'</div>'
+      card.innerHTML='<div class="pattern-type"><i class="fa-solid '+icon+'"></i> '+esc(label)+'</div>'
         +'<div class="pattern-desc">'+esc(p.description||'No description')+'</div>'
         +'<div class="pattern-conf">Confidence: '+(p.confidence!==undefined?Math.round(p.confidence*100)+'%':'N/A')+'</div>';
       shown++;
@@ -2435,7 +2443,7 @@ function renderPatternsLimited(patterns){
       card.style.filter='blur(4px)';
       card.style.userSelect='none';
       card.style.position='relative';
-      card.innerHTML='<div class="pattern-type"><i class="fa-solid '+icon+'"></i> '+esc(p.pattern_type||'insight')+'</div>'
+      card.innerHTML='<div class="pattern-type"><i class="fa-solid '+icon+'"></i> '+esc(label)+'</div>'
         +'<div class="pattern-desc">'+esc(p.description||'No description')+'</div>'
         +'<div class="pattern-conf">Confidence: '+(p.confidence!==undefined?Math.round(p.confidence*100)+'%':'N/A')+'</div>';
     }
@@ -2480,7 +2488,7 @@ async function downloadReport(){
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    log('REPORT: Downloaded full intelligence report','info');
+    log('Full report downloaded','info');
   }catch(e){
     log('DOWNLOAD ERROR: '+e.message,'error');
   }
@@ -2548,7 +2556,7 @@ async function loadInvestigations(){
     document.getElementById('invActiveCount').textContent=details.length;
     document.getElementById('invHistoryCount').textContent=getHistory().length;
 
-    log('LOADED: '+details.length+' investigation(s) from server','info');
+    log(details.length+' investigation(s) loaded','info');
     document.getElementById('dossierProjects').textContent=projects.length;
 
     if(!projectId||!details.find(d=>d.id===projectId)){
@@ -2738,7 +2746,7 @@ function newInvestigation(){
   document.getElementById('projectIdDisplay').textContent='';
   const btn=document.getElementById('btnCreateProject');
   btn.disabled=false;
-  btn.innerHTML='<i class="fa-solid fa-rocket"></i> Initialize Project';
+  btn.innerHTML='<i class="fa-solid fa-rocket"></i> Create Investigation';
 
   // Reset buttons
   document.getElementById('btnAddEntity').disabled=true;
@@ -2916,7 +2924,7 @@ if(savedProjectId) projectId=savedProjectId;
     await onAuthSuccess();
   }else{
     document.getElementById('authOverlay').classList.remove('hidden');
-    log('AUTH: Awaiting login credentials','warn');
+    log('Please log in to continue','warn');
   }
 })();
 </script>
